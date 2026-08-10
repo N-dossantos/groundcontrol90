@@ -1,5 +1,6 @@
 package com.ecommerce.service;
 
+import com.ecommerce.dto.ProductoFiltroDTO;
 import com.ecommerce.dto.ProductoVarianteDTO;
 import com.ecommerce.entity.Producto;
 import com.ecommerce.entity.ProductoVariante;
@@ -7,6 +8,7 @@ import com.ecommerce.entity.Usuario;
 import com.ecommerce.exception.UsuarioNotFoundException;
 import com.ecommerce.repository.ProductoRepository;
 import com.ecommerce.repository.ProductoVarianteRepository;
+import com.ecommerce.repository.spec.ProductoSpecifications;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -150,6 +152,15 @@ public class ProductoService {
     @Transactional(readOnly = true)
     public List<Producto> buscarProductosPorCategoria(Long categoryId) {
         return productoRepository.findByCategoriaId(categoryId);
+    }
+
+    /**
+     * Filtrar el catálogo combinando club, liga, tipo, talle y rango de precio.
+     * Los filtros no informados se ignoran.
+     */
+    @Transactional(readOnly = true)
+    public List<Producto> filtrarProductos(ProductoFiltroDTO filtro) {
+        return productoRepository.findAll(ProductoSpecifications.conFiltro(filtro));
     }
 
     /**

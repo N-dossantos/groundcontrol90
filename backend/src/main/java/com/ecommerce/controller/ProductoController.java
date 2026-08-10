@@ -1,8 +1,10 @@
 package com.ecommerce.controller;
 
 import com.ecommerce.dto.ProductoDTO;
+import com.ecommerce.dto.ProductoFiltroDTO;
 import com.ecommerce.dto.ProductoRequestDTO;
 import com.ecommerce.entity.Producto;
+import com.ecommerce.entity.TipoProducto;
 import com.ecommerce.entity.Usuario;
 import com.ecommerce.exception.ProductoNotFoundException;
 import com.ecommerce.service.ProductoService;
@@ -12,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -114,6 +117,29 @@ public class ProductoController {
         return ResponseEntity.ok(productos);
     }
     
+    /**
+     * GET /api/productos/filtrar?club=&liga=&tipo=&talle=&precioMin=&precioMax=
+     * Filtra el catálogo combinando los criterios informados
+     */
+    @GetMapping("/filtrar")
+    public ResponseEntity<List<ProductoDTO>> filtrarProductos(
+            @RequestParam(required = false) String club,
+            @RequestParam(required = false) String liga,
+            @RequestParam(required = false) TipoProducto tipo,
+            @RequestParam(required = false) String talle,
+            @RequestParam(required = false) BigDecimal precioMin,
+            @RequestParam(required = false) BigDecimal precioMax) {
+        ProductoFiltroDTO filtro = ProductoFiltroDTO.builder()
+                .club(club).liga(liga).tipo(tipo).talle(talle)
+                .precioMin(precioMin).precioMax(precioMax).build();
+
+        List<ProductoDTO> productos = productoService.filtrarProductos(filtro)
+                .stream()
+                .map(ProductoDTO::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(productos);
+    }
+
     /**
      * GET /api/productos/health
      * Endpoint de salud para verificar que el servicio está funcionando
