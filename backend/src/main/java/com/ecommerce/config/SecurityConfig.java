@@ -1,6 +1,7 @@
 package com.ecommerce.config;
 
 import com.ecommerce.repository.UsuarioRepository;
+import com.ecommerce.security.AuthRateLimitFilter;
 import com.ecommerce.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -32,6 +33,9 @@ public class SecurityConfig {
 
     @Autowired
     private CorsConfigurationSource corsConfigurationSource;
+
+    @Autowired
+    private AuthRateLimitFilter authRateLimitFilter;
 
     // =============================================
     // USER DETAILS SERVICE
@@ -101,6 +105,10 @@ public class SecurityConfig {
             .sessionManagement(session -> 
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
+            // El rate limiter va antes del filtro JWT (ambos anclados en el mismo punto:
+            // el orden de inserción se respeta porque List.sort es estable), y después
+            // del CorsFilter, para que la respuesta 429 llegue al navegador con headers CORS.
+            .addFilterBefore(authRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
             .authenticationProvider(authenticationProvider());
         
