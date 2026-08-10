@@ -19,14 +19,18 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    
+
     @Autowired
     private UsuarioRepository usuarioRepository;
-    
+
+    @Autowired
+    private CorsConfigurationSource corsConfigurationSource;
+
     // =============================================
     // USER DETAILS SERVICE
     // =============================================
@@ -70,6 +74,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .csrf(csrf -> csrf.disable())  // Desactivar CSRF para APIs REST
             .authorizeHttpRequests(auth -> auth
                 // Endpoints públicos (sin autenticación)

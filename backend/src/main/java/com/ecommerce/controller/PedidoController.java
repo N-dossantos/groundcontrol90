@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/pedidos")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 public class PedidoController {
     
     @Autowired
