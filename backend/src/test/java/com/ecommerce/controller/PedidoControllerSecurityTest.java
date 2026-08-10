@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -78,5 +79,38 @@ class PedidoControllerSecurityTest {
         mockMvc.perform(get("/api/pedidos/mis-pedidos")
                         .header("Authorization", "Bearer " + tokenUsuarioComun))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Un usuario común no puede actualizar el estado de un pedido")
+    void testActualizarEstado_UsuarioComun_Forbidden() throws Exception {
+        mockMvc.perform(put("/api/pedidos/1/estado")
+                        .param("estado", "PENDIENTE")
+                        .header("Authorization", "Bearer " + tokenUsuarioComun))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Un usuario común no puede filtrar pedidos por estado")
+    void testObtenerPedidosPorEstado_UsuarioComun_Forbidden() throws Exception {
+        mockMvc.perform(get("/api/pedidos/estado/PENDIENTE")
+                        .header("Authorization", "Bearer " + tokenUsuarioComun))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Un usuario común no puede ver las ventas totales")
+    void testObtenerTodasLasVentas_UsuarioComun_Forbidden() throws Exception {
+        mockMvc.perform(get("/api/pedidos/admin/ventas-totales")
+                        .header("Authorization", "Bearer " + tokenUsuarioComun))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Un usuario común no puede ver las estadísticas generales")
+    void testObtenerEstadisticasGenerales_UsuarioComun_Forbidden() throws Exception {
+        mockMvc.perform(get("/api/pedidos/admin/estadisticas-generales")
+                        .header("Authorization", "Bearer " + tokenUsuarioComun))
+                .andExpect(status().isForbidden());
     }
 }
