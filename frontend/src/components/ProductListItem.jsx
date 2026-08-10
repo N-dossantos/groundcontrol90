@@ -1,26 +1,11 @@
 import { Link } from "react-router-dom"
-import { useCart } from "../context/CartContext"
-import { useToast } from "../context/ToastContext"
 import { formatPrice } from "../utils/formatters"
-import { ShoppingCart, Star, Package } from "lucide-react"
+import { Star } from "lucide-react"
 
+// Igual que ProductCard: el talle se elige en la ficha, no desde el listado.
 const ProductListItem = ({ product }) => {
-  const { addToCart } = useCart()
-  const { success, error } = useToast()
-
-  const handleAddToCart = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
-    if (product.stock === 0) {
-      error("Producto sin stock")
-      return
-    }
-    addToCart(product)
-    success(`${product.name} agregado al carrito`)
-  }
-
-  const isOutOfStock = product.stock === 0
+  const isOutOfStock = (product.stockTotal ?? 0) === 0
+  const tallesDisponibles = product.variantes?.filter((v) => v.stock > 0) ?? []
   const images = product.images || ["/placeholder.svg?height=200&width=200"]
 
   return (
@@ -56,6 +41,10 @@ const ProductListItem = ({ product }) => {
                 </h3>
               </Link>
               
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                {product.club} • {product.liga} • {product.temporada}
+              </p>
+
               <p className="text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
                 {product.description}
               </p>
@@ -81,46 +70,36 @@ const ProductListItem = ({ product }) => {
                     {formatPrice(product.price)}
                   </span>
                   <span className={`text-sm font-medium ${isOutOfStock ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
-                    {isOutOfStock ? "Sin stock" : `${product.stock} disponibles`}
+                    {isOutOfStock ? "Sin stock" : `${product.stockTotal} disponibles`}
                   </span>
                 </div>
 
-                {/* Add to Cart Button */}
-                <button
-                  onClick={handleAddToCart}
-                  disabled={isOutOfStock}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                    isOutOfStock
-                      ? "bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400"
-                      : "bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                  }`}
+                <Link
+                  to={`/product/${product.id}`}
+                  className="px-4 py-2 rounded-lg font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                 >
-                  <ShoppingCart size={16} />
-                  {isOutOfStock ? "Sin Stock" : "Agregar"}
-                </button>
+                  Ver talles
+                </Link>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Stock indicator */}
+      {/* Talles disponibles */}
       {!isOutOfStock && (
         <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
           <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-            <span>Disponibilidad:</span>
-            <div className="flex items-center space-x-2">
-              <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full ${
-                    product.stock > 10 ? "bg-green-500" : product.stock > 5 ? "bg-yellow-500" : "bg-red-500"
-                  }`}
-                  style={{ width: `${Math.min((product.stock / 20) * 100, 100)}%` }}
-                ></div>
-              </div>
-              <span className="text-xs">
-                {product.stock > 10 ? "En stock" : product.stock > 0 ? "Pocas unidades" : "Agotado"}
-              </span>
+            <span>Talles disponibles:</span>
+            <div className="flex flex-wrap items-center gap-2">
+              {tallesDisponibles.map((variante) => (
+                <span
+                  key={variante.id}
+                  className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-xs"
+                >
+                  {variante.talle}
+                </span>
+              ))}
             </div>
           </div>
         </div>

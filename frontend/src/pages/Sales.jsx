@@ -315,6 +315,7 @@ const Sales = () => {
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
                     {sale.productoNombre}
+                    {sale.talle && ` — talle ${sale.talle}`}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     Pedido #{sale.pedidoId} • {formatDate(sale.fechaPedido)}

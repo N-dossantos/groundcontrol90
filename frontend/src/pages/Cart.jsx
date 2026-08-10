@@ -18,15 +18,15 @@ const Cart = () => {
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
   const [shippingAddress, setShippingAddress] = useState("")
   const [notes, setNotes] = useState("")
-  const handleQuantityChange = (productId, newQuantity) => {
+  const handleQuantityChange = (cartItemId, newQuantity) => {
     if (newQuantity < 1) {
-      removeFromCart(productId)
+      removeFromCart(cartItemId)
       return
     }
-    updateQuantity(productId, newQuantity)
+    updateQuantity(cartItemId, newQuantity)
   }
-  const handleRemoveItem = (productId, productName) => {
-    removeFromCart(productId)
+  const handleRemoveItem = (cartItemId, productName) => {
+    removeFromCart(cartItemId)
     success(`${productName} eliminado del carrito`)
   }
   const handleClearCart = () => {
@@ -111,7 +111,12 @@ const Cart = () => {
           {/* Items list */}
           <div className="space-y-4">
             {items.map((item) => (
-              <CartItem key={item.id} item={item} onQuantityChange={handleQuantityChange} onRemove={handleRemoveItem} />
+              <CartItem
+                key={item.cartItemId}
+                item={item}
+                onQuantityChange={handleQuantityChange}
+                onRemove={handleRemoveItem}
+              />
             ))}
           </div>
         </div>
@@ -121,9 +126,9 @@ const Cart = () => {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Resumen del pedido</h2>
             <div className="space-y-3 mb-6">
               {items.map((item) => (
-                <div key={item.id} className="flex justify-between text-sm">
+                <div key={item.cartItemId} className="flex justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-300">
-                    {item.name} × {item.quantity}
+                    {item.name} (talle {item.talle}) × {item.quantity}
                   </span>
                   <span className="text-gray-900 dark:text-white">{formatPrice(item.price * item.quantity)}</span>
                 </div>
@@ -254,14 +259,14 @@ const CartItem = ({ item, onQuantityChange, onRemove }) => {
           <Link to={`/product/${item.id}`} className="block">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{item.name}</h3>
           </Link>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">{item.description}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">Talle {item.talle}</p>
           <p className="text-lg font-semibold text-blue-600 dark:text-blue-400 mt-2">{formatPrice(item.price)}</p>
         </div>
         {/* Quantity Controls */}
         <div className="flex items-center space-x-3">
           <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
             <button
-              onClick={() => onQuantityChange(item.id, item.quantity - 1)}
+              onClick={() => onQuantityChange(item.cartItemId, item.quantity - 1)}
               className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-white rounded-lg"
               aria-label="Disminuir cantidad"
             >
@@ -269,7 +274,7 @@ const CartItem = ({ item, onQuantityChange, onRemove }) => {
             </button>
             <span className="px-3 py-1 text-center min-w-12 text-gray-900 dark:text-white rounded-lg">{item.quantity}</span>
             <button
-              onClick={() => onQuantityChange(item.id, item.quantity + 1)}
+              onClick={() => onQuantityChange(item.cartItemId, item.quantity + 1)}
               className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-white rounded-lg"
               aria-label="Aumentar cantidad"
             >
@@ -278,7 +283,7 @@ const CartItem = ({ item, onQuantityChange, onRemove }) => {
           </div>
           {/* Remove Button */}
           <button
-            onClick={() => onRemove(item.id, item.name)}
+            onClick={() => onRemove(item.cartItemId, item.name)}
             className="p-2 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
             aria-label="Eliminar producto"
           >

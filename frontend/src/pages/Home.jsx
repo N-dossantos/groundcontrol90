@@ -79,7 +79,7 @@ const Home = () => {
   }
 
   // Get featured products (first 4 products with stock)
-  const featuredProducts = products?.filter(p => p.stock > 0).slice(0, 4) || []
+  const featuredProducts = products?.filter(p => (p.stockTotal ?? 0) > 0).slice(0, 4) || []
   if (productsLoading && !products) {
     return (
       <div className="space-y-8">

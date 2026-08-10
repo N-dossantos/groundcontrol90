@@ -15,9 +15,12 @@ export const CartProvider = ({ children }) => {
   useEffect(() => {
     const savedCart = localStorage.getItem("cart_items")
     if (savedCart) {
+      // Se descartan los items guardados antes de que el carrito identificara
+      // por variante: no tienen talle y el backend los rechazaría al checkout.
+      const items = JSON.parse(savedCart).filter((item) => item.cartItemId && item.varianteId)
       dispatch({
         type: "RESTORE_CART",
-        payload: JSON.parse(savedCart),
+        payload: items,
       })
     }
   }, [])
@@ -25,22 +28,22 @@ export const CartProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem("cart_items", JSON.stringify(state.items))
   }, [state.items])
-  const addToCart = (product) => {
+  const addToCart = (product, variante) => {
     dispatch({
       type: "ADD_TO_CART",
-      payload: product,
+      payload: { product, variante },
     })
   }
-  const removeFromCart = (productId) => {
+  const removeFromCart = (cartItemId) => {
     dispatch({
       type: "REMOVE_FROM_CART",
-      payload: productId,
+      payload: cartItemId,
     })
   }
-  const updateQuantity = (productId, quantity) => {
+  const updateQuantity = (cartItemId, quantity) => {
     dispatch({
       type: "UPDATE_QUANTITY",
-      payload: { id: productId, quantity },
+      payload: { cartItemId, quantity },
     })
   }
   const clearCart = () => {
@@ -58,7 +61,7 @@ export const CartProvider = ({ children }) => {
       // Preparar datos del pedido
       const orderData = {
         items: state.items.map(item => ({
-          productId: item.id,
+          productoVarianteId: item.varianteId,
           cantidad: item.quantity
         })),
         shippingAddress: shippingData?.address || '',

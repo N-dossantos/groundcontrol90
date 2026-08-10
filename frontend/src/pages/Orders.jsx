@@ -239,6 +239,7 @@ const Orders = () => {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 dark:text-white truncate">
                         {item.productoNombre}
+                        {item.talle && ` (talle ${item.talle})`}
                       </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         Cantidad: {item.cantidad} × {formatPrice(item.precioUnitario)}

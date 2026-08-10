@@ -36,7 +36,7 @@ class PedidoServiceTest {
     private DetallePedidoRepository detallePedidoRepository;
 
     @Mock
-    private ProductoRepository productoRepository;
+    private ProductoVarianteRepository productoVarianteRepository;
 
     @Mock
     private UsuarioRepository usuarioRepository;
@@ -45,7 +45,10 @@ class PedidoServiceTest {
     private PedidoService pedidoService;
 
     private Usuario usuario;
+    private Usuario vendedor;
     private Producto producto;
+    private ProductoVariante talleS;
+    private ProductoVariante talleM;
     private Pedido pedido;
 
     @BeforeEach
@@ -59,7 +62,7 @@ class PedidoServiceTest {
                 .role(Role.USER)
                 .build();
 
-        Usuario vendedor = Usuario.builder()
+        vendedor = Usuario.builder()
                 .id(2L)
                 .nombre("Vendedor")
                 .email("vendedor@test.com")
@@ -67,11 +70,20 @@ class PedidoServiceTest {
 
         producto = Producto.builder()
                 .id(1L)
-                .name("Laptop")
-                .price(new BigDecimal("1500.00"))
-                .stock(10)
+                .name("Camiseta Titular")
+                .price(new BigDecimal("45000.00"))
+                .club("Boca Juniors")
+                .liga("Liga Profesional Argentina")
+                .temporada("2026")
+                .tipo(TipoProducto.CAMISETA)
                 .ownerUser(vendedor)
                 .build();
+
+        talleS = ProductoVariante.builder()
+                .id(10L).producto(producto).talle("S").stock(5).sku("BOCA-2026-S").build();
+        talleM = ProductoVariante.builder()
+                .id(11L).producto(producto).talle("M").stock(8).sku("BOCA-2026-M").build();
+        producto.setVariantes(List.of(talleS, talleM));
 
         pedido = Pedido.builder()
                 .id(1L)
@@ -135,7 +147,7 @@ class PedidoServiceTest {
     void testCrearPedido() {
         // Arrange
         CreatePedidoDTO.ItemCarritoDTO itemDTO = CreatePedidoDTO.ItemCarritoDTO.builder()
-                .productoId(1L)
+                .productoVarianteId(11L)
                 .cantidad(1)
                 .build();
 
@@ -145,13 +157,12 @@ class PedidoServiceTest {
                 .build();
 
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(productoVarianteRepository.findById(11L)).thenReturn(Optional.of(talleM));
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> {
             Pedido p = invocation.getArgument(0);
             p.setId(1L);
             return p;
         });
-        when(productoRepository.save(any(Producto.class))).thenReturn(producto);
 
         // Act
         Pedido resultado = pedidoService.crearPedido(1L, createPedidoDTO);
@@ -159,9 +170,32 @@ class PedidoServiceTest {
         // Assert
         assertNotNull(resultado);
         assertEquals(1, resultado.getItems().size());
+        assertEquals("M", resultado.getItems().get(0).getTalle());
         verify(usuarioRepository, times(1)).findById(1L);
-        verify(productoRepository, times(1)).findById(1L);
+        verify(productoVarianteRepository, times(1)).findById(11L);
         verify(pedidoRepository, times(1)).save(any(Pedido.class));
+    }
+
+    @Test
+    @DisplayName("Debería descontar el stock de la variante (talle) correcta, no de otras variantes del mismo producto")
+    void testCrearPedido_DescuentaSoloLaVarianteComprada() {
+        // Arrange
+        CreatePedidoDTO dto = CreatePedidoDTO.builder()
+                .items(List.of(new CreatePedidoDTO.ItemCarritoDTO(11L, 3)))
+                .direccionEnvio("Calle Falsa 123")
+                .build();
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(productoVarianteRepository.findById(11L)).thenReturn(Optional.of(talleM));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        pedidoService.crearPedido(1L, dto);
+
+        // Assert
+        assertEquals(5, talleS.getStock()); // sin cambios
+        assertEquals(5, talleM.getStock()); // 8 - 3
+        verify(productoVarianteRepository).save(talleM);
     }
 
     @Test
@@ -181,11 +215,11 @@ class PedidoServiceTest {
     }
 
     @Test
-    @DisplayName("Debería lanzar excepción cuando el producto no existe")
-    void testCrearPedido_ProductoNoExiste() {
+    @DisplayName("Debería lanzar excepción cuando la variante no existe")
+    void testCrearPedido_VarianteNoExiste() {
         // Arrange
         CreatePedidoDTO.ItemCarritoDTO itemDTO = CreatePedidoDTO.ItemCarritoDTO.builder()
-                .productoId(999L)
+                .productoVarianteId(999L)
                 .cantidad(1)
                 .build();
 
@@ -194,7 +228,7 @@ class PedidoServiceTest {
                 .build();
 
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(productoRepository.findById(999L)).thenReturn(Optional.empty());
+        when(productoVarianteRepository.findById(999L)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThrows(ProductoNotFoundException.class,
@@ -202,13 +236,13 @@ class PedidoServiceTest {
     }
 
     @Test
-    @DisplayName("Debería lanzar excepción cuando no hay stock suficiente")
+    @DisplayName("Debería lanzar excepción cuando no hay stock suficiente en el talle elegido")
     void testCrearPedido_StockInsuficiente() {
         // Arrange
-        producto.setStock(0); // Sin stock
+        talleM.setStock(0); // Sin stock en ese talle
 
         CreatePedidoDTO.ItemCarritoDTO itemDTO = CreatePedidoDTO.ItemCarritoDTO.builder()
-                .productoId(1L)
+                .productoVarianteId(11L)
                 .cantidad(1)
                 .build();
 
@@ -217,7 +251,7 @@ class PedidoServiceTest {
                 .build();
 
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(productoVarianteRepository.findById(11L)).thenReturn(Optional.of(talleM));
 
         // Act & Assert
         assertThrows(StockInsuficienteException.class,

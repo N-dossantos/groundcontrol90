@@ -1,7 +1,10 @@
 package com.ecommerce.service;
 
+import com.ecommerce.dto.ProductoVarianteDTO;
 import com.ecommerce.entity.Categoria;
 import com.ecommerce.entity.Producto;
+import com.ecommerce.entity.ProductoVariante;
+import com.ecommerce.entity.TipoProducto;
 import com.ecommerce.entity.Usuario;
 import com.ecommerce.repository.ProductoRepository;
 import com.ecommerce.service.UsuarioService;
@@ -29,7 +32,7 @@ class ProductoServiceTest {
 
     @Mock
     private ProductoRepository productoRepository;
-    
+
     @Mock
     private UsuarioService usuarioService;
 
@@ -44,7 +47,7 @@ class ProductoServiceTest {
     void setUp() {
         categoria = Categoria.builder()
                 .id(1L)
-                .nombre("Electrónicos")
+                .nombre("Camisetas")
                 .build();
 
         usuario = Usuario.builder()
@@ -58,10 +61,13 @@ class ProductoServiceTest {
 
         producto = Producto.builder()
                 .id(1L)
-                .name("Laptop")
-                .description("Laptop de alta calidad")
-                .price(new BigDecimal("1500.00"))
-                .stock(10)
+                .name("Camiseta Titular")
+                .description("Camiseta titular temporada 2026")
+                .price(new BigDecimal("45000.00"))
+                .club("Boca Juniors")
+                .liga("Liga Profesional Argentina")
+                .temporada("2026")
+                .tipo(TipoProducto.CAMISETA)
                 .categoria(categoria)
                 .ownerUser(usuario)
                 .createdAt(LocalDateTime.now())
@@ -81,7 +87,7 @@ class ProductoServiceTest {
         // Assert
         assertNotNull(resultado);
         assertEquals(1, resultado.size());
-        assertEquals("Laptop", resultado.get(0).getName());
+        assertEquals("Camiseta Titular", resultado.get(0).getName());
         verify(productoRepository, times(1)).findAll();
     }
 
@@ -96,7 +102,7 @@ class ProductoServiceTest {
 
         // Assert
         assertTrue(resultado.isPresent());
-        assertEquals("Laptop", resultado.get().getName());
+        assertEquals("Camiseta Titular", resultado.get().getName());
         verify(productoRepository, times(1)).findById(1L);
     }
 
@@ -120,9 +126,12 @@ class ProductoServiceTest {
         // Arrange
         Long ownerUserId = 1L;
         Producto nuevoProducto = Producto.builder()
-                .name("Tablet")
-                .price(new BigDecimal("500.00"))
-                .stock(5)
+                .name("Short Titular")
+                .price(new BigDecimal("22000.00"))
+                .club("River Plate")
+                .liga("Liga Profesional Argentina")
+                .temporada("2026")
+                .tipo(TipoProducto.SHORT)
                 .build();
 
         when(usuarioService.findById(ownerUserId)).thenReturn(usuario);
@@ -134,7 +143,7 @@ class ProductoServiceTest {
         });
 
         // Act
-        Producto resultado = productoService.crearProducto(nuevoProducto, ownerUserId);
+        Producto resultado = productoService.crearProducto(nuevoProducto, ownerUserId, List.of());
 
         // Assert
         assertNotNull(resultado);
@@ -147,13 +156,69 @@ class ProductoServiceTest {
     }
 
     @Test
+    @DisplayName("Debería crear un producto con club, liga, temporada y tipo")
+    void testCrearProducto_ConDatosDeCamiseta() {
+        // Arrange
+        Producto nuevo = Producto.builder()
+                .name("Camiseta Titular 2026")
+                .club("Boca Juniors")
+                .liga("Liga Profesional Argentina")
+                .temporada("2026")
+                .tipo(TipoProducto.CAMISETA)
+                .price(new BigDecimal("45000"))
+                .build();
+
+        when(usuarioService.findById(1L)).thenReturn(usuario);
+        when(productoRepository.save(any(Producto.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        Producto creado = productoService.crearProducto(nuevo, 1L, List.of());
+
+        // Assert
+        assertEquals("Boca Juniors", creado.getClub());
+        assertEquals("Liga Profesional Argentina", creado.getLiga());
+        assertEquals("2026", creado.getTemporada());
+        assertEquals(TipoProducto.CAMISETA, creado.getTipo());
+    }
+
+    @Test
+    @DisplayName("Debería crear un producto con variantes de talle y calcular el stock total")
+    void testCrearProducto_ConVariantes() {
+        // Arrange
+        Producto nuevo = Producto.builder()
+                .name("Camiseta Titular 2026")
+                .club("Boca Juniors").liga("Liga Profesional Argentina")
+                .temporada("2026").tipo(TipoProducto.CAMISETA)
+                .price(new BigDecimal("45000"))
+                .build();
+
+        List<ProductoVarianteDTO> variantes = List.of(
+                ProductoVarianteDTO.builder().talle("S").stock(5).sku("BOCA-2026-S").build(),
+                ProductoVarianteDTO.builder().talle("M").stock(8).sku("BOCA-2026-M").build()
+        );
+
+        when(usuarioService.findById(1L)).thenReturn(usuario);
+        when(productoRepository.save(any(Producto.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        Producto creado = productoService.crearProducto(nuevo, 1L, variantes);
+
+        // Assert
+        assertEquals(2, creado.getVariantes().size());
+        assertEquals(13, creado.getVariantes().stream().mapToInt(ProductoVariante::getStock).sum());
+    }
+
+    @Test
     @DisplayName("Debería actualizar un producto existente")
     void testActualizarProducto_Existe() {
         // Arrange
         Producto productoActualizado = Producto.builder()
-                .name("Laptop Actualizada")
-                .price(new BigDecimal("1600.00"))
-                .stock(15)
+                .name("Camiseta Titular Actualizada")
+                .price(new BigDecimal("48000.00"))
+                .club("Boca Juniors")
+                .liga("Liga Profesional Argentina")
+                .temporada("2027")
+                .tipo(TipoProducto.CAMISETA)
                 .build();
 
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
@@ -164,12 +229,16 @@ class ProductoServiceTest {
         });
 
         // Act
-        Optional<Producto> resultado = productoService.actualizarProducto(1L, productoActualizado);
+        Optional<Producto> resultado = productoService.actualizarProducto(1L, productoActualizado, List.of());
 
         // Assert
         assertTrue(resultado.isPresent());
         assertEquals(1L, resultado.get().getId());
-        assertEquals("Laptop Actualizada", resultado.get().getName());
+        assertEquals("Camiseta Titular Actualizada", resultado.get().getName());
+        assertEquals("2027", resultado.get().getTemporada());
+        // El vendedor propietario no viaja en el body de la request: se preserva el existente
+        assertNotNull(resultado.get().getOwnerUser());
+        assertEquals(usuario.getId(), resultado.get().getOwnerUser().getId());
         verify(productoRepository, times(1)).findById(1L);
         verify(productoRepository, times(1)).save(any(Producto.class));
     }
@@ -179,13 +248,13 @@ class ProductoServiceTest {
     void testActualizarProducto_NoExiste() {
         // Arrange
         Producto productoActualizado = Producto.builder()
-                .name("Laptop Actualizada")
+                .name("Camiseta Titular Actualizada")
                 .build();
 
         when(productoRepository.findById(999L)).thenReturn(Optional.empty());
 
         // Act
-        Optional<Producto> resultado = productoService.actualizarProducto(999L, productoActualizado);
+        Optional<Producto> resultado = productoService.actualizarProducto(999L, productoActualizado, List.of());
 
         // Assert
         assertFalse(resultado.isPresent());
@@ -229,15 +298,15 @@ class ProductoServiceTest {
     void testBuscarProductosPorNombre() {
         // Arrange
         List<Producto> productosEsperados = Arrays.asList(producto);
-        when(productoRepository.findByNombreContainingIgnoreCase("laptop")).thenReturn(productosEsperados);
+        when(productoRepository.findByNombreContainingIgnoreCase("camiseta")).thenReturn(productosEsperados);
 
         // Act
-        List<Producto> resultado = productoService.buscarProductosPorNombre("laptop");
+        List<Producto> resultado = productoService.buscarProductosPorNombre("camiseta");
 
         // Assert
         assertNotNull(resultado);
         assertEquals(1, resultado.size());
-        verify(productoRepository, times(1)).findByNombreContainingIgnoreCase("laptop");
+        verify(productoRepository, times(1)).findByNombreContainingIgnoreCase("camiseta");
     }
 
     @Test

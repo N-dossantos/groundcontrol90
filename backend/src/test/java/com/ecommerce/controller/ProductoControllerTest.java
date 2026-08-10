@@ -1,8 +1,10 @@
 package com.ecommerce.controller;
 
 import com.ecommerce.dto.ProductoDTO;
+import com.ecommerce.dto.ProductoRequestDTO;
 import com.ecommerce.entity.Categoria;
 import com.ecommerce.entity.Producto;
+import com.ecommerce.entity.TipoProducto;
 import com.ecommerce.entity.Usuario;
 import com.ecommerce.exception.ProductoNotFoundException;
 import com.ecommerce.service.ProductoService;
@@ -44,7 +46,7 @@ class ProductoControllerTest {
     void setUp() {
         Categoria categoria = Categoria.builder()
                 .id(1L)
-                .nombre("Electrónicos")
+                .nombre("Clubes Argentinos")
                 .build();
 
         usuario = Usuario.builder()
@@ -54,10 +56,13 @@ class ProductoControllerTest {
 
         producto = Producto.builder()
                 .id(1L)
-                .name("Laptop")
-                .description("Laptop de alta calidad")
-                .price(new BigDecimal("1500.00"))
-                .stock(10)
+                .name("Camiseta Titular")
+                .description("Camiseta titular temporada 2026")
+                .price(new BigDecimal("45000.00"))
+                .club("Boca Juniors")
+                .liga("Liga Profesional Argentina")
+                .temporada("2026")
+                .tipo(TipoProducto.CAMISETA)
                 .categoria(categoria)
                 .ownerUser(usuario)
                 .createdAt(LocalDateTime.now())
@@ -93,7 +98,7 @@ class ProductoControllerTest {
         // Assert
         assertEquals(HttpStatus.OK, respuesta.getStatusCode());
         assertNotNull(respuesta.getBody());
-        assertEquals("Laptop", respuesta.getBody().getName());
+        assertEquals("Camiseta Titular", respuesta.getBody().getName());
         verify(productoService, times(1)).obtenerProductoPorId(1L);
     }
 
@@ -114,17 +119,21 @@ class ProductoControllerTest {
     void testCrearProducto() {
         // Arrange
         Long userId = usuario.getId();
+        ProductoRequestDTO request = ProductoRequestDTO.builder()
+                .producto(producto)
+                .variantes(List.of())
+                .build();
 
-        when(productoService.crearProducto(any(Producto.class), eq(userId))).thenReturn(producto);
+        when(productoService.crearProducto(any(Producto.class), eq(userId), any())).thenReturn(producto);
 
         // Act
-        ResponseEntity<ProductoDTO> respuesta = productoController.crearProducto(producto, usuario);
+        ResponseEntity<ProductoDTO> respuesta = productoController.crearProducto(request, usuario);
 
         // Assert
         assertEquals(HttpStatus.CREATED, respuesta.getStatusCode());
         assertNotNull(respuesta.getBody());
-        assertEquals("Laptop", respuesta.getBody().getName());
-        verify(productoService, times(1)).crearProducto(any(Producto.class), eq(userId));
+        assertEquals("Camiseta Titular", respuesta.getBody().getName());
+        verify(productoService, times(1)).crearProducto(any(Producto.class), eq(userId), any());
     }
 
     @Test
@@ -133,20 +142,24 @@ class ProductoControllerTest {
         // Arrange
         Producto productoActualizado = Producto.builder()
                 .id(1L)
-                .name("Laptop Actualizada")
-                .price(new BigDecimal("1600.00"))
+                .name("Camiseta Titular Actualizada")
+                .price(new BigDecimal("48000.00"))
+                .build();
+        ProductoRequestDTO request = ProductoRequestDTO.builder()
+                .producto(productoActualizado)
+                .variantes(List.of())
                 .build();
 
-        when(productoService.actualizarProducto(1L, productoActualizado))
+        when(productoService.actualizarProducto(eq(1L), eq(productoActualizado), any()))
                 .thenReturn(Optional.of(productoActualizado));
 
         // Act
-        ResponseEntity<ProductoDTO> respuesta = productoController.actualizarProducto(1L, productoActualizado);
+        ResponseEntity<ProductoDTO> respuesta = productoController.actualizarProducto(1L, request);
 
         // Assert
         assertEquals(HttpStatus.OK, respuesta.getStatusCode());
         assertNotNull(respuesta.getBody());
-        verify(productoService, times(1)).actualizarProducto(1L, productoActualizado);
+        verify(productoService, times(1)).actualizarProducto(eq(1L), eq(productoActualizado), any());
     }
 
     @Test
@@ -168,15 +181,15 @@ class ProductoControllerTest {
     void testBuscarProductosPorNombre() {
         // Arrange
         List<Producto> productos = Arrays.asList(producto);
-        when(productoService.buscarProductosPorNombre("laptop")).thenReturn(productos);
+        when(productoService.buscarProductosPorNombre("camiseta")).thenReturn(productos);
 
         // Act
-        ResponseEntity<List<ProductoDTO>> respuesta = productoController.buscarProductosPorNombre("laptop");
+        ResponseEntity<List<ProductoDTO>> respuesta = productoController.buscarProductosPorNombre("camiseta");
 
         // Assert
         assertEquals(HttpStatus.OK, respuesta.getStatusCode());
         assertNotNull(respuesta.getBody());
-        verify(productoService, times(1)).buscarProductosPorNombre("laptop");
+        verify(productoService, times(1)).buscarProductosPorNombre("camiseta");
     }
 }
 

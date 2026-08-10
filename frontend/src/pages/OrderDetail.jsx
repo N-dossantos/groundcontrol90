@@ -189,6 +189,9 @@ const OrderDetail = () => {
                 <h3 className="font-medium text-gray-900 dark:text-white mb-1">
                   {item.productoNombre}
                 </h3>
+                {item.talle && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Talle {item.talle}</p>
+                )}
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {formatPrice(item.precioUnitario)} × {item.cantidad} unidad{item.cantidad !== 1 ? 'es' : ''}
                 </p>

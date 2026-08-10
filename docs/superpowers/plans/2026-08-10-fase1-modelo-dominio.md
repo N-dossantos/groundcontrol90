@@ -1,6 +1,6 @@
 # Fase 1 — Modelo de dominio de camisetas de fútbol — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Transformar el catálogo genérico actual (`Producto` con un `stock` agregado) en un catálogo real de camisetas/shorts de fútbol con club, liga, temporada, tipo y stock por talle, y propagar ese cambio al carrito, al pedido y al panel de vendedor.
 
@@ -31,7 +31,7 @@
 - Produces: `TipoProducto` enum (`CAMISETA`, `SHORT`) — consumido por `Producto`, `ProductoDTO` y el filtro de catálogo del Task 5.
 - Produces: campos `Producto.club/liga/temporada/tipo` — consumidos por el frontend (Task 8, Task 9) y el filtro de catálogo (Task 5).
 
-- [ ] **Step 1: Escribir el test que falla**
+- [x] **Step 1: Escribir el test que falla**
 
 En `backend/src/test/java/com/ecommerce/service/ProductoServiceTest.java`, agregar (siguiendo el patrón `@Mock`/`@InjectMocks` que ya usa la clase):
 
@@ -62,12 +62,12 @@ void testCrearProducto_ConDatosDeCamiseta() {
 
 (Revisar el `setUp()` existente de la clase para reusar el mock `vendedor`/`usuarioService` ya definido; si el nombre difiere, ajustar la referencia.)
 
-- [ ] **Step 2: Correr el test y verificar que falla**
+- [x] **Step 2: Correr el test y verificar que falla**
 
 Run: `cd backend && mvnd test -Dtest=ProductoServiceTest`
 Expected: FALLA — no compila, `Producto` no tiene `club`/`liga`/`temporada`/`tipo` ni existe `TipoProducto`.
 
-- [ ] **Step 3: Crear el enum `TipoProducto`**
+- [x] **Step 3: Crear el enum `TipoProducto`**
 
 ```java
 package com.ecommerce.entity;
@@ -78,7 +78,7 @@ public enum TipoProducto {
 }
 ```
 
-- [ ] **Step 4: Extender `Producto`**
+- [x] **Step 4: Extender `Producto`**
 
 En `backend/src/main/java/com/ecommerce/entity/Producto.java`, agregar los campos después de `stock` (línea 31) y quitar el campo `stock` (línea 30-31) — el stock pasa a vivir únicamente en `ProductoVariante` (Task 2):
 
@@ -99,7 +99,7 @@ En `backend/src/main/java/com/ecommerce/entity/Producto.java`, agregar los campo
 
 Quitar también el constructor auxiliar `Producto(String name, BigDecimal price)` (líneas 54-60) que asignaba `this.stock = 0` — ya no compila sin el campo `stock`, y no tiene otro uso (verificar con `grep -rn "new Producto(" backend/src/main/java` antes de borrarlo; a la fecha de este plan no hay otros usos).
 
-- [ ] **Step 5: Actualizar `ProductoDTO`**
+- [x] **Step 5: Actualizar `ProductoDTO`**
 
 En `backend/src/main/java/com/ecommerce/dto/ProductoDTO.java`, quitar el campo `stock` (se resuelve en el Task 2 como suma de variantes) y agregar:
 
@@ -121,7 +121,7 @@ y en el constructor de mapeo:
 
 (El campo `stock` del DTO se retoma en el Task 2 como propiedad calculada.)
 
-- [ ] **Step 6: Migración Flyway**
+- [x] **Step 6: Migración Flyway**
 
 Crear `backend/src/main/resources/db/migration/V2__producto_camisetas_futbol.sql`:
 
@@ -140,17 +140,17 @@ ALTER TABLE productos ALTER COLUMN tipo DROP DEFAULT;
 
 (Los `DEFAULT` transitorios existen solo para no romper filas ya cargadas en una base con datos reales; se quitan en la misma migración porque hacia adelante estos campos son obligatorios y sin default implícito.)
 
-- [ ] **Step 7: Correr el test y verificar que pasa**
+- [x] **Step 7: Correr el test y verificar que pasa**
 
 Run: `cd backend && mvnd test -Dtest=ProductoServiceTest`
 Expected: PASS
 
-- [ ] **Step 8: Correr toda la suite de backend**
+- [x] **Step 8: Correr toda la suite de backend**
 
 Run: `cd backend && mvnd test`
 Expected: FALLA en otros puntos que todavía referencian `Producto.getStock()`/`setStock()` (p. ej. `ProductoController`, `PedidoService`, `ProductoRepository`) — es esperado, se resuelve en el Task 2. Anotar la lista de errores de compilación para direccionar el Task 2.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add backend/src/main/java/com/ecommerce/entity/TipoProducto.java \
@@ -185,7 +185,7 @@ git commit -m "feat: agregar club, liga, temporada y tipo a Producto"
 - Produces: `ProductoDTO.variantes: List<ProductoVarianteDTO>` y `ProductoDTO.stockTotal: Integer` (suma de variantes) — consumido por el frontend (Task 8, Task 9).
 - El campo `version` (`@Version`) en `ProductoVariante` se agrega en esta tarea aunque recién se use activamente para optimistic locking en la Fase 2 (checkout) — es parte del modelo de datos, no tiene sentido introducirlo después con otra migración.
 
-- [ ] **Step 1: Escribir el test que falla**
+- [x] **Step 1: Escribir el test que falla**
 
 Agregar a `backend/src/test/java/com/ecommerce/service/ProductoServiceTest.java`:
 
@@ -223,12 +223,12 @@ Agregar el mock correspondiente al inicio de la clase (junto a los `@Mock` exist
     private ProductoVarianteRepository productoVarianteRepository;
 ```
 
-- [ ] **Step 2: Correr el test y verificar que falla**
+- [x] **Step 2: Correr el test y verificar que falla**
 
 Run: `cd backend && mvnd test -Dtest=ProductoServiceTest`
 Expected: FALLA — no compila (`ProductoVariante`, `ProductoVarianteDTO`, `productoVarianteRepository`, la sobrecarga de `crearProducto` con variantes no existen todavía).
 
-- [ ] **Step 3: Crear la entidad `ProductoVariante`**
+- [x] **Step 3: Crear la entidad `ProductoVariante`**
 
 ```java
 package com.ecommerce.entity;
@@ -267,7 +267,7 @@ public class ProductoVariante {
 }
 ```
 
-- [ ] **Step 4: Crear `ProductoVarianteRepository`**
+- [x] **Step 4: Crear `ProductoVarianteRepository`**
 
 ```java
 package com.ecommerce.repository;
@@ -284,7 +284,7 @@ public interface ProductoVarianteRepository extends JpaRepository<ProductoVarian
 }
 ```
 
-- [ ] **Step 5: Crear `ProductoVarianteDTO`**
+- [x] **Step 5: Crear `ProductoVarianteDTO`**
 
 ```java
 package com.ecommerce.dto;
@@ -314,7 +314,7 @@ public class ProductoVarianteDTO {
 }
 ```
 
-- [ ] **Step 6: Agregar la relación en `Producto` y actualizar `ProductoDTO`**
+- [x] **Step 6: Agregar la relación en `Producto` y actualizar `ProductoDTO`**
 
 En `Producto.java`, agregar:
 
@@ -340,7 +340,7 @@ y en el constructor de mapeo:
         this.stockTotal = this.variantes.stream().mapToInt(ProductoVarianteDTO::getStock).sum();
 ```
 
-- [ ] **Step 7: Actualizar `ProductoService`**
+- [x] **Step 7: Actualizar `ProductoService`**
 
 En `backend/src/main/java/com/ecommerce/service/ProductoService.java`, inyectar `ProductoVarianteRepository` y agregar el método usado por el test, además de ajustar `crearProducto`/`actualizarProducto` para no tocar más el campo `stock` (ya no existe):
 
@@ -380,7 +380,7 @@ En `backend/src/main/java/com/ecommerce/service/ProductoService.java`, inyectar 
 
 Quitar el método `crearProducto(Producto, Long)` de dos parámetros (queda reemplazado por la sobrecarga de tres) y actualizar `actualizarProducto` para aceptar también `List<ProductoVarianteDTO>` y llamar a `reemplazarVariantes` (borrando antes las variantes previas del producto vía `productoVarianteRepository.deleteAll(productoVarianteRepository.findByProductoId(id))`, ya que `orphanRemoval = true` en la relación se encarga de la baja cuando se reasigna la lista completa en el mismo `save`).
 
-- [ ] **Step 8: Actualizar `ProductoController`**
+- [x] **Step 8: Actualizar `ProductoController`**
 
 `crearProducto`/`actualizarProducto` reciben hoy un `Producto` crudo por `@RequestBody`. Se cambia a un DTO de request que incluya las variantes:
 
@@ -405,7 +405,7 @@ y los métodos pasan a:
 
 (Ajustar `actualizarProducto` de forma equivalente.) Quitar del `ProductoRepository` los métodos `findByStockGreaterThan`/`findByStockEquals` (ya no existe la columna `stock` en `productos`) — se reemplazan en el Task 5 por una consulta sobre variantes.
 
-- [ ] **Step 9: Migración Flyway**
+- [x] **Step 9: Migración Flyway**
 
 Crear `backend/src/main/resources/db/migration/V3__producto_variantes.sql`:
 
@@ -429,17 +429,17 @@ FROM productos;
 ALTER TABLE productos DROP COLUMN stock;
 ```
 
-- [ ] **Step 10: Correr el test y verificar que pasa**
+- [x] **Step 10: Correr el test y verificar que pasa**
 
 Run: `cd backend && mvnd test -Dtest=ProductoServiceTest`
 Expected: PASS
 
-- [ ] **Step 11: Correr toda la suite de backend**
+- [x] **Step 11: Correr toda la suite de backend**
 
 Run: `cd backend && mvnd test`
 Expected: FALLA todavía en `PedidoService`/`PedidoServiceTest` (usan `producto.getStock()`) — se resuelve en el Task 4. Confirmar que los fallos restantes son únicamente en esos archivos.
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add backend/src/main/java/com/ecommerce/entity/ProductoVariante.java \
@@ -469,7 +469,7 @@ git commit -m "feat: reemplazar stock agregado de Producto por ProductoVariante 
 - Produces: `DetallePedido.variante: ProductoVariante`, `DetallePedido.talle: String` (snapshot) — consumido por `PedidoService` (Task 4) y por el frontend (`DetallePedidoDTO.talle`).
 - Produces: `CreatePedidoDTO.ItemCarritoDTO.productoVarianteId` reemplaza a `productoId` — consumido por el frontend (Task 10).
 
-- [ ] **Step 1: Actualizar `DetallePedido`**
+- [x] **Step 1: Actualizar `DetallePedido`**
 
 Agregar campos después de `producto` (mantener `producto` para no perder la referencia al producto padre, útil para agrupar por producto en reportes):
 
@@ -482,7 +482,7 @@ Agregar campos después de `producto` (mantener `producto` para no perder la ref
     private String talle;
 ```
 
-- [ ] **Step 2: Actualizar `CreatePedidoDTO.ItemCarritoDTO`**
+- [x] **Step 2: Actualizar `CreatePedidoDTO.ItemCarritoDTO`**
 
 ```java
     public static class ItemCarritoDTO {
@@ -491,7 +491,7 @@ Agregar campos después de `producto` (mantener `producto` para no perder la ref
     }
 ```
 
-- [ ] **Step 3: Actualizar `DetallePedidoDTO`**
+- [x] **Step 3: Actualizar `DetallePedidoDTO`**
 
 Agregar el campo `talle` y mapearlo en el constructor:
 
@@ -503,7 +503,7 @@ Agregar el campo `talle` y mapearlo en el constructor:
         this.talle = detalle.getTalle();
 ```
 
-- [ ] **Step 4: Migración Flyway**
+- [x] **Step 4: Migración Flyway**
 
 ```sql
 ALTER TABLE detalle_pedidos
@@ -521,12 +521,12 @@ ALTER TABLE detalle_pedidos
     ADD CONSTRAINT fk_detalle_variante FOREIGN KEY (producto_variante_id) REFERENCES producto_variantes(id);
 ```
 
-- [ ] **Step 5: Compilar (sin test dedicado — este cambio de esquema se prueba de punta a punta en el Task 4)**
+- [x] **Step 5: Compilar (sin test dedicado — este cambio de esquema se prueba de punta a punta en el Task 4)**
 
 Run: `cd backend && mvnd compile`
 Expected: compila (los usos de `CreatePedidoDTO.ItemCarritoDTO.getProductoId()` en `PedidoService` quedan rotos hasta el Task 4, que es indivisible de este).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/main/java/com/ecommerce/entity/DetallePedido.java \
@@ -548,7 +548,7 @@ git commit -m "feat: DetallePedido referencia ProductoVariante (talle) en vez de
 - Consumes: `ProductoVarianteRepository` (Task 2), `DetallePedido.variante/talle` (Task 3).
 - Produces: `PedidoService.crearPedido` valida y descuenta `ProductoVariante.stock` en vez de `Producto.stock`; `cancelarPedido`/`actualizarEstadoItem` devuelven stock a la variante correspondiente.
 
-- [ ] **Step 1: Revisar y ajustar `PedidoServiceTest` existente**
+- [x] **Step 1: Revisar y ajustar `PedidoServiceTest` existente**
 
 Leer `backend/src/test/java/com/ecommerce/service/PedidoServiceTest.java` completo. Reemplazar cada `Producto` de prueba armado con `.stock(n)` por un `Producto` con una `ProductoVariante` asociada (`.stock(n)` pasa a vivir en la variante), y agregar el mock `ProductoVarianteRepository` a la clase (mismo patrón `@Mock` que ya usa para `ProductoRepository`).
 
@@ -581,12 +581,12 @@ void testCrearPedido_DescuentaSoloLaVarianteComprada() {
 
 (Ajustar nombres de mocks/fixtures `comprador`/`vendedor` al `setUp()` real de la clase.)
 
-- [ ] **Step 2: Correr el test y verificar que falla**
+- [x] **Step 2: Correr el test y verificar que falla**
 
 Run: `cd backend && mvnd test -Dtest=PedidoServiceTest`
 Expected: FALLA en compilación — `PedidoService` todavía usa `ItemCarritoDTO.getProductoId()` y `productoRepository.findById`, no `productoVarianteRepository`.
 
-- [ ] **Step 3: Reescribir `PedidoService.crearPedido`**
+- [x] **Step 3: Reescribir `PedidoService.crearPedido`**
 
 Inyectar `ProductoVarianteRepository` y reemplazar el bucle de procesamiento de items (líneas 100-140 del archivo original):
 
@@ -634,7 +634,7 @@ Inyectar `ProductoVarianteRepository` y reemplazar el bucle de procesamiento de 
         }
 ```
 
-- [ ] **Step 4: Actualizar `cancelarPedido` y `actualizarEstadoItem` para devolver stock a la variante**
+- [x] **Step 4: Actualizar `cancelarPedido` y `actualizarEstadoItem` para devolver stock a la variante**
 
 En `cancelarPedido`, reemplazar el bloque que devuelve stock (líneas 182-191 del archivo original):
 
@@ -653,17 +653,17 @@ En `cancelarPedido`, reemplazar el bloque que devuelve stock (líneas 182-191 de
 
 En `actualizarEstadoItem`, reemplazar el bloque equivalente (líneas 256-263 del archivo original) por el mismo patrón, usando `detalle.getVariante()` en vez de `detalle.getProducto()`.
 
-- [ ] **Step 5: Correr el test y verificar que pasa**
+- [x] **Step 5: Correr el test y verificar que pasa**
 
 Run: `cd backend && mvnd test -Dtest=PedidoServiceTest`
 Expected: PASS
 
-- [ ] **Step 6: Correr toda la suite de backend**
+- [x] **Step 6: Correr toda la suite de backend**
 
 Run: `cd backend && mvnd test`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add backend/src/main/java/com/ecommerce/service/PedidoService.java \
@@ -685,7 +685,7 @@ git commit -m "feat: PedidoService valida y descuenta stock por variante (talle)
 **Interfaces:**
 - Produces: `ProductoService.filtrarProductos(ProductoFiltroDTO filtro)` → `List<Producto>`, endpoint `GET /api/productos/filtrar?club=&liga=&tipo=&talle=&precioMin=&precioMax=`.
 
-- [ ] **Step 1: Escribir el test que falla**
+- [x] **Step 1: Escribir el test que falla**
 
 Crear `backend/src/test/java/com/ecommerce/service/ProductoFiltroTest.java` como test de integración (necesita join real con `producto_variantes`, no es mockeable con Mockito puro):
 
@@ -766,12 +766,12 @@ class ProductoFiltroTest {
 }
 ```
 
-- [ ] **Step 2: Correr el test y verificar que falla**
+- [x] **Step 2: Correr el test y verificar que falla**
 
 Run: `cd backend && mvnd test -Dtest=ProductoFiltroTest`
 Expected: FALLA — no compila, `ProductoFiltroDTO` y `ProductoService.filtrarProductos` no existen.
 
-- [ ] **Step 3: Crear `ProductoFiltroDTO`**
+- [x] **Step 3: Crear `ProductoFiltroDTO`**
 
 ```java
 package com.ecommerce.dto;
@@ -798,7 +798,7 @@ public class ProductoFiltroDTO {
 }
 ```
 
-- [ ] **Step 4: Crear `ProductoSpecifications`**
+- [x] **Step 4: Crear `ProductoSpecifications`**
 
 ```java
 package com.ecommerce.repository.spec;
@@ -844,7 +844,7 @@ public class ProductoSpecifications {
 }
 ```
 
-- [ ] **Step 5: Extender `ProductoRepository` con `JpaSpecificationExecutor`**
+- [x] **Step 5: Extender `ProductoRepository` con `JpaSpecificationExecutor`**
 
 ```java
 public interface ProductoRepository extends JpaRepository<Producto, Long>, JpaSpecificationExecutor<Producto> {
@@ -852,7 +852,7 @@ public interface ProductoRepository extends JpaRepository<Producto, Long>, JpaSp
 
 (agregar `import org.springframework.data.jpa.repository.JpaSpecificationExecutor;`)
 
-- [ ] **Step 6: Agregar `ProductoService.filtrarProductos`**
+- [x] **Step 6: Agregar `ProductoService.filtrarProductos`**
 
 ```java
     @Transactional(readOnly = true)
@@ -861,7 +861,7 @@ public interface ProductoRepository extends JpaRepository<Producto, Long>, JpaSp
     }
 ```
 
-- [ ] **Step 7: Agregar el endpoint en `ProductoController`**
+- [x] **Step 7: Agregar el endpoint en `ProductoController`**
 
 ```java
     @GetMapping("/filtrar")
@@ -882,17 +882,17 @@ public interface ProductoRepository extends JpaRepository<Producto, Long>, JpaSp
     }
 ```
 
-- [ ] **Step 8: Correr el test y verificar que pasa**
+- [x] **Step 8: Correr el test y verificar que pasa**
 
 Run: `cd backend && mvnd test -Dtest=ProductoFiltroTest`
 Expected: PASS
 
-- [ ] **Step 9: Correr toda la suite de backend**
+- [x] **Step 9: Correr toda la suite de backend**
 
 Run: `cd backend && mvnd test`
 Expected: PASS
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add backend/src/main/java/com/ecommerce/repository/spec/ProductoSpecifications.java \
@@ -919,7 +919,7 @@ git commit -m "feat: filtro de catálogo por club, liga, tipo, talle y precio"
 **Interfaces:**
 - Produces: `GET/POST/PUT/DELETE /api/direcciones` (todas requieren usuario autenticado, cada usuario solo ve/edita las suyas) — consumido por el checkout de la Fase 2 y el frontend (Task 7).
 
-- [ ] **Step 1: Escribir el test que falla**
+- [x] **Step 1: Escribir el test que falla**
 
 Crear `backend/src/test/java/com/ecommerce/controller/DireccionControllerTest.java` como integración (mismo patrón `@SpringBootTest + @AutoConfigureMockMvc + @ActiveProfiles("test")` de la Fase 0):
 
@@ -987,12 +987,12 @@ class DireccionControllerTest {
 }
 ```
 
-- [ ] **Step 2: Correr el test y verificar que falla**
+- [x] **Step 2: Correr el test y verificar que falla**
 
 Run: `cd backend && mvnd test -Dtest=DireccionControllerTest`
 Expected: FALLA — no compila, ninguna de las clases existe.
 
-- [ ] **Step 3: Crear la entidad `Direccion`**
+- [x] **Step 3: Crear la entidad `Direccion`**
 
 ```java
 package com.ecommerce.entity;
@@ -1040,7 +1040,7 @@ public class Direccion {
 }
 ```
 
-- [ ] **Step 4: Crear `DireccionRepository`**
+- [x] **Step 4: Crear `DireccionRepository`**
 
 ```java
 package com.ecommerce.repository;
@@ -1057,7 +1057,7 @@ public interface DireccionRepository extends JpaRepository<Direccion, Long> {
 }
 ```
 
-- [ ] **Step 5: Crear `DireccionDTO`**
+- [x] **Step 5: Crear `DireccionDTO`**
 
 ```java
 package com.ecommerce.dto;
@@ -1095,7 +1095,7 @@ public class DireccionDTO {
 }
 ```
 
-- [ ] **Step 6: Crear `DireccionController`**
+- [x] **Step 6: Crear `DireccionController`**
 
 ```java
 package com.ecommerce.controller;
@@ -1161,7 +1161,7 @@ public class DireccionController {
 }
 ```
 
-- [ ] **Step 7: Migración Flyway**
+- [x] **Step 7: Migración Flyway**
 
 ```sql
 CREATE TABLE direcciones (
@@ -1178,12 +1178,12 @@ CREATE TABLE direcciones (
 );
 ```
 
-- [ ] **Step 8: Correr el test y verificar que pasa**
+- [x] **Step 8: Correr el test y verificar que pasa**
 
 Run: `cd backend && mvnd test -Dtest=DireccionControllerTest`
 Expected: PASS
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add backend/src/main/java/com/ecommerce/entity/Direccion.java \
@@ -1209,7 +1209,7 @@ git commit -m "feat: agregar address book de usuario (Direccion)"
 
 No hay test automatizado de frontend en este proyecto (no hay `vitest`/`jest` configurado en `package.json`); la verificación de este task es manual, vía Task 8/9/10 usando la app corriendo.
 
-- [ ] **Step 1: Actualizar el mapeo de productos**
+- [x] **Step 1: Actualizar el mapeo de productos**
 
 En `frontend/src/services/api.js`, en `getProducts`, `getProduct`, `createProduct` y `updateProduct`, agregar a cada objeto mapeado:
 
@@ -1259,7 +1259,7 @@ En `createProduct`/`updateProduct`, el body enviado pasa de `{ name, description
 
 Quitar `updateProductStock` (ya no tiene sentido: el stock ahora es por variante y se gestiona a través de `updateProduct` con su lista de `variantes`, no hay más un único stock a pisar).
 
-- [ ] **Step 2: Agregar `getProductsFiltered`**
+- [x] **Step 2: Agregar `getProductsFiltered`**
 
 ```js
   async getProductsFiltered(filtro = {}) {
@@ -1287,7 +1287,7 @@ Quitar `updateProductStock` (ya no tiene sentido: el stock ahora es por variante
   },
 ```
 
-- [ ] **Step 3: Agregar endpoints de direcciones**
+- [x] **Step 3: Agregar endpoints de direcciones**
 
 ```js
   // ===== DIRECCIONES =====
@@ -1310,7 +1310,7 @@ Quitar `updateProductStock` (ya no tiene sentido: el stock ahora es por variante
   },
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/services/api.js
@@ -1324,11 +1324,11 @@ git commit -m "feat: mapear club/liga/temporada/tipo/variantes y agregar endpoin
 **Files:**
 - Modify: `frontend/src/pages/ProductForm.jsx`
 
-- [ ] **Step 1: Agregar los campos nuevos al estado del formulario**
+- [x] **Step 1: Agregar los campos nuevos al estado del formulario**
 
 En `formData`, agregar `club`, `liga`, `temporada`, `tipo` (default `"CAMISETA"`) y `variantes` (default `[{ talle: "", stock: "", sku: "" }]`) en vez de `stock`.
 
-- [ ] **Step 2: Agregar los inputs de club/liga/temporada/tipo**
+- [x] **Step 2: Agregar los inputs de club/liga/temporada/tipo**
 
 Junto a los campos existentes de nombre/descripción, agregar (mismo patrón de `input`/`errors` que ya usa el resto del formulario):
 
@@ -1373,7 +1373,7 @@ Junto a los campos existentes de nombre/descripción, agregar (mismo patrón de 
           </div>
 ```
 
-- [ ] **Step 3: Agregar el editor de variantes, reemplazando el input único de "Stock"**
+- [x] **Step 3: Agregar el editor de variantes, reemplazando el input único de "Stock"**
 
 Quitar el bloque de input `stock` (líneas 227-242 del archivo original) y agregar:
 
@@ -1434,7 +1434,7 @@ Agregar las funciones auxiliares junto a `handleChange`:
   }
 ```
 
-- [ ] **Step 4: Actualizar validación y submit**
+- [x] **Step 4: Actualizar validación y submit**
 
 En `validateForm`, reemplazar la validación de `stock` por:
 
@@ -1448,11 +1448,11 @@ y agregar validaciones equivalentes para `club`/`liga`/`temporada` (`validateReq
 
 En `handleSubmit`, `productData` pasa a incluir `club, liga, temporada, tipo, variantes` en vez de `stock`.
 
-- [ ] **Step 5: Verificación manual**
+- [x] **Step 5: Verificación manual**
 
 Run: `npm run dev` (en `frontend/`) y `mvnd spring-boot:run` (en `backend/`, perfil dev). En el navegador: `/dashboard/products/new`, completar el formulario con al menos dos talles, guardar, y confirmar en la ficha del producto (`/product/{id}`) que ambos talles aparecen con su stock.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/pages/ProductForm.jsx
@@ -1469,7 +1469,7 @@ git commit -m "feat: ProductForm agrega club/liga/temporada/tipo y editor de var
 
 Un producto con variantes no se puede agregar al carrito sin elegir talle. Se resuelve así: `ProductCard` dentro del listado ya no agrega directo al carrito — lleva a la ficha del producto, donde sí está el selector. Esto evita construir un selector de talle flotante sobre cada card del catálogo (alcance innecesario para el MVP).
 
-- [ ] **Step 1: `ProductCard.jsx` — quitar el agregado directo, dejar solo navegación a la ficha**
+- [x] **Step 1: `ProductCard.jsx` — quitar el agregado directo, dejar solo navegación a la ficha**
 
 Quitar el botón "Agregar al Carrito" (líneas 55-69 del archivo original) y su `handleAddToCart`; el único punto de interacción de la card pasa a ser el `<Link to={/product/${product.id}}>` que ya envuelve la imagen y el título. Agregar debajo del precio/stock un texto simple:
 
@@ -1481,7 +1481,7 @@ Quitar el botón "Agregar al Carrito" (líneas 55-69 del archivo original) y su 
 
 y reemplazar `isOutOfStock = product.stock === 0` por `isOutOfStock = (product.stockTotal ?? 0) === 0`.
 
-- [ ] **Step 2: `ProductDetail.jsx` — selector de talle**
+- [x] **Step 2: `ProductDetail.jsx` — selector de talle**
 
 Agregar estado `const [selectedTalle, setSelectedTalle] = useState(null)`. Reemplazar el bloque de precio/stock (líneas 118-138 del archivo original) agregando el selector antes del botón de agregar al carrito:
 
@@ -1520,7 +1520,7 @@ Agregar estado `const [selectedTalle, setSelectedTalle] = useState(null)`. Reemp
           </div>
 ```
 
-- [ ] **Step 3: Actualizar `handleAddToCart` para requerir talle seleccionado**
+- [x] **Step 3: Actualizar `handleAddToCart` para requerir talle seleccionado**
 
 ```jsx
   const handleAddToCart = () => {
@@ -1536,11 +1536,11 @@ Agregar estado `const [selectedTalle, setSelectedTalle] = useState(null)`. Reemp
 
 y deshabilitar el botón mientras no haya talle elegido: `disabled={!selectedTalle}` en vez de `disabled={isOutOfStock}` (la variable `isOutOfStock` se recalcula como `(product.stockTotal ?? 0) === 0` y se usa para el badge de la imagen, no para el botón).
 
-- [ ] **Step 4: Verificación manual**
+- [x] **Step 4: Verificación manual**
 
 Run: con backend y frontend corriendo, entrar a la ficha de un producto cargado en el Task 8, confirmar que el botón "Agregar al carrito" está deshabilitado hasta elegir un talle, y que los talles sin stock aparecen deshabilitados.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/pages/ProductDetail.jsx frontend/src/components/ProductCard.jsx
@@ -1558,7 +1558,7 @@ git commit -m "feat: selector de talle obligatorio antes de agregar al carrito"
 
 Hoy el carrito identifica cada línea únicamente por `product.id` (`cartReducer.js:8`), así que agregar dos talles distintos de la misma camiseta pisaría la misma línea. Cada línea de carrito pasa a identificarse por `cartItemId = "${productId}:${varianteId}"`.
 
-- [ ] **Step 1: Actualizar `cartReducer.js`**
+- [x] **Step 1: Actualizar `cartReducer.js`**
 
 ```js
 export const cartInitialState = {
@@ -1615,7 +1615,7 @@ const calculateTotal = (items) => {
 }
 ```
 
-- [ ] **Step 2: Actualizar `CartContext.jsx`**
+- [x] **Step 2: Actualizar `CartContext.jsx`**
 
 ```jsx
   const addToCart = (product, variante) => {
@@ -1640,7 +1640,7 @@ y en `checkout`, `orderData.items` pasa a:
 
 En `api.js` (`createOrder`), actualizar el mapeo de `newOrder.items` para usar `productoVarianteId: item.productoVarianteId` en vez de `productoId: item.productId || item.id`.
 
-- [ ] **Step 3: Actualizar `Cart.jsx`**
+- [x] **Step 3: Actualizar `Cart.jsx`**
 
 En `frontend/src/pages/Cart.jsx`:
 
@@ -1649,11 +1649,11 @@ En `frontend/src/pages/Cart.jsx`:
 3. En el resumen del pedido, `items.map((item) => (<div key={item.id} ...>` (línea 124): cambiar `key={item.id}` por `key={item.cartItemId}`, y agregar el talle al texto de la línea 126 (`{item.name} × {item.quantity}` → `` {item.name} (talle {item.talle}) × {item.quantity} ``).
 4. En el componente `CartItem` (líneas 240-298): agregar `<p>` con el talle debajo del nombre (línea 255-256, mismo estilo que la línea de descripción que ya existe en 257), y cambiar las tres llamadas que hoy usan `item.id` como identificador de operación — `onQuantityChange(item.id, item.quantity - 1)` (línea 264), `onQuantityChange(item.id, item.quantity + 1)` (línea 272), `onRemove(item.id, item.name)` (línea 281) — por `item.cartItemId` en el primer argumento de cada una. La navegación a la ficha de producto (línea 254, `Link to={/product/${item.id}}`) **no cambia**, sigue usando `item.id` porque ahí sí se refiere al producto, no a la línea de carrito.
 
-- [ ] **Step 4: Verificación manual**
+- [x] **Step 4: Verificación manual**
 
 Run: con la app corriendo, agregar la misma camiseta en dos talles distintos desde la ficha de producto y confirmar en `/cart` que aparecen como dos líneas separadas, cada una con su talle y cantidad editable de forma independiente. Completar un checkout de prueba y confirmar en `/orders` que el pedido creado muestra el talle correcto por ítem.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/reducers/cartReducer.js frontend/src/context/CartContext.jsx frontend/src/pages/Cart.jsx frontend/src/services/api.js
@@ -1670,3 +1670,48 @@ cd backend && mvnd test
 Expected: todos los tests en verde.
 
 Luego, manualmente: levantar backend + frontend, cargar un producto con 2+ talles desde `/dashboard/products/new`, agregarlo al carrito en dos talles distintos, y completar un pedido de prueba end-to-end confirmando que el stock por talle se descuenta correctamente (`GET /api/productos/{id}` antes y después del pedido).
+
+---
+
+## Notas de ejecución (Fase 1 aplicada)
+
+Ejecutado sobre la rama `fase-1-modelo-dominio`. Desvíos respecto del plan escrito,
+todos por cosas que aparecieron al implementarlo:
+
+- **Los Tasks 1 a 4 fueron un solo commit.** El plan preveía dejar el build roto entre
+  el Task 1 y el Task 2; al sacar `Producto.stock` también queda roto `PedidoService`,
+  que recién se arregla en el Task 4. Con lo cual el primer punto donde el proyecto
+  vuelve a compilar es el final del Task 4.
+- **`DataInitializer` se reescribió** (no figuraba en el plan): sembraba productos
+  genéricos con `.stock(n)` y no compilaba. Ahora siembra camisetas y shorts con sus
+  variantes de talle, y categorías del rubro.
+- **`ProductoService.actualizarProducto` pasa a modificar la entidad persistida** en vez
+  de guardar la que llega en el body: el body no trae `ownerUser` ni `createdAt`, así que
+  cada PUT dejaba el producto sin vendedor.
+- **`reemplazarVariantes` aparea las variantes por talle y las actualiza en su lugar**,
+  en vez de borrarlas y recrearlas como decía el plan. Borrarlas rompe la FK de
+  `detalle_pedidos` en cuanto el talle ya se vendió, y además cambia los ids de variante,
+  que son lo que referencian el historial de pedidos y los carritos. Eliminar un talle con
+  ventas devuelve 400 pidiendo ponerle stock 0.
+- **`productos.tipo` es `ENUM('CAMISETA','SHORT')`, no `VARCHAR(20)`**: Hibernate materializa
+  un `@Enumerated(EnumType.STRING)` como ENUM nativo en MySQL y el `ddl-auto=validate` de
+  producción rechazaba el VARCHAR.
+- **Se eliminaron `GET /api/productos/stock` y `buscarProductosPorStock`** (el plan solo
+  mencionaba borrar los métodos de repositorio): dependían de la columna borrada, no tenían
+  consumidores en el frontend y el filtro del Task 5 los reemplaza.
+- **Se migraron 4 vistas de frontend que el plan no listaba** (`ProductListItem`,
+  `ProductCarousel`, `DashboardProducts`, `Home`): leían el `stock` plano que el backend ya
+  no manda. `ProductListItem` además agregaba al carrito sin talle, igual que `ProductCard`.
+- **`VentaDTO` expone el talle**: sin eso el vendedor no sabe qué talle despachar.
+- **Tests agregados fuera del plan**: `ProductoControllerIntegrationTest`, deliberadamente sin
+  `@Transactional`. Los errores de mapeo de colecciones de Hibernate recién aparecen al
+  commitear, así que un test que hace rollback no los ve. Fue el que destapó los dos bugs de
+  `reemplazarVariantes`.
+
+Verificación ejecutada: 106 tests de backend en verde; frontend compila y lintea sin errores;
+flujo completo probado contra el backend corriendo (alta de producto con 2 talles, filtros,
+pedido que descuenta solo el talle comprado, stock insuficiente por talle, cancelación que
+repone, address book y edición de producto); y migraciones aplicadas por Flyway contra un
+MySQL 8 real, con `ddl-auto=validate` pasando y el backfill de datos previos verificado.
+
+Pendiente: la verificación visual en el navegador de los Tasks 8, 9 y 10.

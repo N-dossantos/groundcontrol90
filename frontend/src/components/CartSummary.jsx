@@ -11,9 +11,9 @@ const CartSummary = ({ showDetails = false }) => {
       {showDetails && (
         <div className="space-y-2 mb-4">
           {items.map((item) => (
-            <div key={item.id} className="flex justify-between text-sm">
+            <div key={item.cartItemId} className="flex justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-300">
-                {item.name} × {item.quantity}
+                {item.name} (talle {item.talle}) × {item.quantity}
               </span>
               <span className="text-gray-900 dark:text-white">{formatPrice(item.price * item.quantity)}</span>
             </div>
