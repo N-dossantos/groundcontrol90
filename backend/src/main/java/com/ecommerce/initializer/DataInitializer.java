@@ -2,17 +2,22 @@ package com.ecommerce.initializer;
 
 import com.ecommerce.entity.Categoria;
 import com.ecommerce.entity.Producto;
+import com.ecommerce.entity.ProductoVariante;
 import com.ecommerce.entity.Role;
+import com.ecommerce.entity.TipoProducto;
 import com.ecommerce.entity.Usuario;
 import com.ecommerce.repository.CategoriaRepository;
 import com.ecommerce.repository.ProductoRepository;
+import com.ecommerce.repository.ProductoVarianteRepository;
 import com.ecommerce.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -22,6 +27,9 @@ public class DataInitializer implements CommandLineRunner {
 
     @Autowired
     private ProductoRepository productoRepository;
+
+    @Autowired
+    private ProductoVarianteRepository productoVarianteRepository;
 
     @Autowired
     private UsuarioService usuarioService;
@@ -36,32 +44,27 @@ public class DataInitializer implements CommandLineRunner {
 
     private void initializeData() {
         // Crear categorías
-        Categoria electronica = Categoria.builder()
-                .nombre("Electrónica")
-                .descripcion("Dispositivos electrónicos y tecnología")
+        Categoria clubesArgentinos = Categoria.builder()
+                .nombre("Clubes Argentinos")
+                .descripcion("Camisetas y shorts de clubes del fútbol argentino")
                 .build();
 
-        Categoria ropa = Categoria.builder()
-                .nombre("Ropa")
-                .descripcion("Prendas de vestir y accesorios")
+        Categoria clubesEuropeos = Categoria.builder()
+                .nombre("Clubes Europeos")
+                .descripcion("Camisetas y shorts de clubes de las principales ligas europeas")
                 .build();
 
-        Categoria hogar = Categoria.builder()
-                .nombre("Hogar")
-                .descripcion("Artículos para el hogar y decoración")
+        Categoria selecciones = Categoria.builder()
+                .nombre("Selecciones")
+                .descripcion("Camisetas y shorts de selecciones nacionales")
                 .build();
 
-        Categoria deportes = Categoria.builder()
-                .nombre("Deportes")
-                .descripcion("Artículos deportivos y fitness")
+        Categoria retro = Categoria.builder()
+                .nombre("Retro")
+                .descripcion("Reediciones de camisetas históricas")
                 .build();
 
-        Categoria libros = Categoria.builder()
-                .nombre("Libros")
-                .descripcion("Libros y material educativo")
-                .build();
-
-        categoriaRepository.saveAll(Arrays.asList(electronica, ropa, hogar, deportes, libros));
+        categoriaRepository.saveAll(Arrays.asList(clubesArgentinos, clubesEuropeos, selecciones, retro));
 
         // Crear usuarios
         Usuario admin = Usuario.builder()
@@ -96,67 +99,81 @@ public class DataInitializer implements CommandLineRunner {
         usuarioService.saveUsuario(usuario1);
         usuarioService.saveUsuario(usuario2);
 
-        // Crear productos de ejemplo
-        Producto iphone = Producto.builder()
-                .name("iPhone 15 Pro Max")
-                .description("El iPhone más avanzado con chip A17 Pro, cámara de 48MP, pantalla Super Retina XDR de 6.7 pulgadas")
-                .price(new BigDecimal("1299.99"))
-                .stock(8)
-                .images(Arrays.asList("https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=800&h=600&fit=crop&crop=center"))
-                .categoria(electronica)
-                .ownerUser(usuario1)
-                .build();
+        // Crear productos de ejemplo (el stock vive en las variantes de talle)
+        crearProducto(
+                "Camiseta Titular Boca Juniors 2026",
+                "Camiseta titular oficial temporada 2026, tela liviana con tecnología de secado rápido",
+                new BigDecimal("45000.00"), "Boca Juniors", "Liga Profesional Argentina", "2026",
+                TipoProducto.CAMISETA, clubesArgentinos, usuario1,
+                "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=800&h=600&fit=crop&crop=center",
+                new String[]{"S", "M", "L", "XL"}, new int[]{6, 10, 8, 4}, "BOCA-2026-TIT");
 
-        Producto macbook = Producto.builder()
-                .name("MacBook Air M2")
-                .description("Laptop ultradelgada con chip M2 de Apple, pantalla Liquid Retina de 13.6 pulgadas")
-                .price(new BigDecimal("1199.99"))
-                .stock(12)
-                .images(Arrays.asList("https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=800&h=600&fit=crop&crop=center"))
-                .categoria(electronica)
-                .ownerUser(usuario1)
-                .build();
+        crearProducto(
+                "Camiseta Titular River Plate 2026",
+                "Camiseta titular oficial temporada 2026 con la banda roja clásica",
+                new BigDecimal("45000.00"), "River Plate", "Liga Profesional Argentina", "2026",
+                TipoProducto.CAMISETA, clubesArgentinos, usuario1,
+                "https://images.unsplash.com/photo-1580087433295-ab2600c1030e?w=800&h=600&fit=crop&crop=center",
+                new String[]{"S", "M", "L", "XL"}, new int[]{5, 12, 9, 3}, "RIVER-2026-TIT");
 
-        Producto nike = Producto.builder()
-                .name("Nike Air Max 270")
-                .description("Zapatillas deportivas con tecnología Air Max, suela visible de 270 grados")
-                .price(new BigDecimal("149.99"))
-                .stock(20)
-                .images(Arrays.asList("https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&h=600&fit=crop&crop=center"))
-                .categoria(ropa)
-                .ownerUser(usuario2)
-                .build();
+        crearProducto(
+                "Short Titular Boca Juniors 2026",
+                "Short titular oficial temporada 2026, cintura elástica con cordón ajustable",
+                new BigDecimal("22000.00"), "Boca Juniors", "Liga Profesional Argentina", "2026",
+                TipoProducto.SHORT, clubesArgentinos, usuario2,
+                "https://images.unsplash.com/photo-1562183241-b937e95585b6?w=800&h=600&fit=crop&crop=center",
+                new String[]{"S", "M", "L"}, new int[]{7, 11, 6}, "BOCA-2026-SHORT");
 
-        Producto sofa = Producto.builder()
-                .name("Sofá 3 Plazas Moderno")
-                .description("Sofá de 3 plazas con tapizado en tela gris, estructura de madera maciza")
-                .price(new BigDecimal("899.99"))
-                .stock(3)
-                .images(Arrays.asList("https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=600&fit=crop&crop=center"))
-                .categoria(hogar)
-                .ownerUser(usuario2)
-                .build();
+        crearProducto(
+                "Camiseta Titular Real Madrid 2026",
+                "Camiseta titular blanca temporada 2026, corte atlético",
+                new BigDecimal("78000.00"), "Real Madrid", "LaLiga", "2026",
+                TipoProducto.CAMISETA, clubesEuropeos, usuario1,
+                "https://images.unsplash.com/photo-1577212017184-80cc0da11082?w=800&h=600&fit=crop&crop=center",
+                new String[]{"S", "M", "L", "XL", "XXL"}, new int[]{4, 8, 7, 5, 2}, "RMA-2026-TIT");
 
-        Producto balon = Producto.builder()
-                .name("Balón de Fútbol Adidas Al Rihla")
-                .description("Balón oficial de la Copa Mundial FIFA 2022, diseñado con tecnología aerodinámica avanzada")
-                .price(new BigDecimal("89.99"))
-                .stock(18)
-                .images(Arrays.asList("https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800&h=600&fit=crop&crop=center"))
-                .categoria(deportes)
-                .ownerUser(usuario1)
-                .build();
+        crearProducto(
+                "Camiseta Selección Argentina 2026",
+                "Camiseta titular de la selección argentina, edición con las tres estrellas",
+                new BigDecimal("89000.00"), "Selección Argentina", "Selecciones", "2026",
+                TipoProducto.CAMISETA, selecciones, usuario2,
+                "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&h=600&fit=crop&crop=center",
+                new String[]{"S", "M", "L", "XL"}, new int[]{10, 15, 12, 6}, "ARG-2026-TIT");
 
-        Producto libro = Producto.builder()
-                .name("Don Quijote de la Mancha - Edición Anotada")
-                .description("Clásico de la literatura española de Miguel de Cervantes en edición anotada")
-                .price(new BigDecimal("24.99"))
-                .stock(25)
-                .images(Arrays.asList("https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&h=600&fit=crop&crop=center"))
-                .categoria(libros)
-                .ownerUser(usuario2)
-                .build();
+        crearProducto(
+                "Camiseta Retro Argentina 1986",
+                "Reedición de la camiseta campeona del mundo en México 1986",
+                new BigDecimal("65000.00"), "Selección Argentina", "Selecciones", "1986",
+                TipoProducto.CAMISETA, retro, usuario2,
+                "https://images.unsplash.com/photo-1571945153237-4929e783af4a?w=800&h=600&fit=crop&crop=center",
+                new String[]{"M", "L", "XL"}, new int[]{3, 5, 2}, "ARG-1986-RETRO");
+    }
 
-        productoRepository.saveAll(Arrays.asList(iphone, macbook, nike, sofa, balon, libro));
+    private void crearProducto(String nombre, String descripcion, BigDecimal precio, String club, String liga,
+                               String temporada, TipoProducto tipo, Categoria categoria, Usuario owner,
+                               String imagen, String[] talles, int[] stocks, String skuBase) {
+        Producto producto = productoRepository.save(Producto.builder()
+                .name(nombre)
+                .description(descripcion)
+                .price(precio)
+                .club(club)
+                .liga(liga)
+                .temporada(temporada)
+                .tipo(tipo)
+                .images(Arrays.asList(imagen))
+                .categoria(categoria)
+                .ownerUser(owner)
+                .build());
+
+        List<ProductoVariante> variantes = new ArrayList<>();
+        for (int i = 0; i < talles.length; i++) {
+            variantes.add(ProductoVariante.builder()
+                    .producto(producto)
+                    .talle(talles[i])
+                    .stock(stocks[i])
+                    .sku(skuBase + "-" + talles[i])
+                    .build());
+        }
+        productoVarianteRepository.saveAll(variantes);
     }
 }

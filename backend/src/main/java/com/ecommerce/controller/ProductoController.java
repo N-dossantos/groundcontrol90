@@ -1,6 +1,7 @@
 package com.ecommerce.controller;
 
 import com.ecommerce.dto.ProductoDTO;
+import com.ecommerce.dto.ProductoRequestDTO;
 import com.ecommerce.entity.Producto;
 import com.ecommerce.entity.Usuario;
 import com.ecommerce.exception.ProductoNotFoundException;
@@ -48,25 +49,28 @@ public class ProductoController {
     
     /**
      * POST /api/productos
-     * Crea un nuevo producto
+     * Crea un nuevo producto con sus variantes de talle
      * Asigna automáticamente el producto al vendedor autenticado
      */
     @PostMapping
     public ResponseEntity<ProductoDTO> crearProducto(
-            @RequestBody Producto producto,
+            @RequestBody ProductoRequestDTO request,
             @AuthenticationPrincipal Usuario usuario) {
         // Crear el producto asignándolo al usuario autenticado
-        Producto productoCreado = productoService.crearProducto(producto, usuario.getId());
+        Producto productoCreado = productoService.crearProducto(
+                request.getProducto(), usuario.getId(), request.getVariantes());
         return ResponseEntity.status(HttpStatus.CREATED).body(new ProductoDTO(productoCreado));
     }
-    
+
     /**
      * PUT /api/productos/{id}
-     * Actualiza un producto existente
+     * Actualiza un producto existente y su lista de variantes
      */
     @PutMapping("/{id}")
-    public ResponseEntity<ProductoDTO> actualizarProducto(@PathVariable Long id, @RequestBody Producto producto) {
-        Optional<Producto> productoActualizado = productoService.actualizarProducto(id, producto);
+    public ResponseEntity<ProductoDTO> actualizarProducto(@PathVariable Long id,
+                                                          @RequestBody ProductoRequestDTO request) {
+        Optional<Producto> productoActualizado = productoService.actualizarProducto(
+                id, request.getProducto(), request.getVariantes());
         return productoActualizado.map(p -> ResponseEntity.ok(new ProductoDTO(p)))
                                 .orElseThrow(() -> new ProductoNotFoundException(id));
     }
@@ -104,19 +108,6 @@ public class ProductoController {
     @GetMapping("/categoria/{categoryId}")
     public ResponseEntity<List<ProductoDTO>> buscarProductosPorCategoria(@PathVariable Long categoryId) {
         List<ProductoDTO> productos = productoService.buscarProductosPorCategoria(categoryId)
-                .stream()
-                .map(ProductoDTO::new)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(productos);
-    }
-    
-    /**
-     * GET /api/productos/stock?disponible={disponible}
-     * Busca productos por disponibilidad de stock
-     */
-    @GetMapping("/stock")
-    public ResponseEntity<List<ProductoDTO>> buscarProductosPorStock(@RequestParam(defaultValue = "true") boolean disponible) {
-        List<ProductoDTO> productos = productoService.buscarProductosPorStock(disponible)
                 .stream()
                 .map(ProductoDTO::new)
                 .collect(Collectors.toList());

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -28,8 +29,23 @@ public class Producto {
     private BigDecimal price;
     
     @Column(nullable = false)
-    private Integer stock;
-    
+    private String club;
+
+    @Column(nullable = false)
+    private String liga;
+
+    @Column(nullable = false)
+    private String temporada;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TipoProducto tipo;
+
+    // El stock vive únicamente en las variantes (un stock por talle)
+    @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<ProductoVariante> variantes = new ArrayList<>();
+
     @ElementCollection
     @CollectionTable(name = "producto_imagenes", joinColumns = @JoinColumn(name = "producto_id"))
     @Column(name = "imagen_url")
@@ -51,14 +67,6 @@ public class Producto {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
-    // Constructor auxiliar para compatibilidad con ProductoService actual
-    public Producto(String name, BigDecimal price) {
-        this.name = name;
-        this.price = price;
-        this.stock = 0;
-        this.createdAt = LocalDateTime.now();
-    }
-    
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
@@ -71,7 +79,11 @@ public class Producto {
                 ", name='" + name + '\'' +
                 ", description='" + description + '\'' +
                 ", price=" + price +
-                ", stock=" + stock +
+                ", club='" + club + '\'' +
+                ", liga='" + liga + '\'' +
+                ", temporada='" + temporada + '\'' +
+                ", tipo=" + tipo +
+                ", variantes=" + (variantes != null ? variantes.size() : 0) +
                 ", categoria=" + (categoria != null ? categoria.getId() : null) +
                 ", ownerUser=" + (ownerUser != null ? ownerUser.getId() : null) +
                 ", createdAt=" + createdAt +

@@ -8,7 +8,7 @@ import com.ecommerce.exception.StockInsuficienteException;
 import com.ecommerce.exception.UsuarioNotFoundException;
 import com.ecommerce.repository.DetallePedidoRepository;
 import com.ecommerce.repository.PedidoRepository;
-import com.ecommerce.repository.ProductoRepository;
+import com.ecommerce.repository.ProductoVarianteRepository;
 import com.ecommerce.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,8 +31,8 @@ public class PedidoService {
     private DetallePedidoRepository detallePedidoRepository;
     
     @Autowired
-    private ProductoRepository productoRepository;
-    
+    private ProductoVarianteRepository productoVarianteRepository;
+
     @Autowired
     private UsuarioRepository usuarioRepository;
     
@@ -100,40 +100,43 @@ public class PedidoService {
         BigDecimal totalPedido = BigDecimal.ZERO;
         
         for (CreatePedidoDTO.ItemCarritoDTO itemDTO : createPedidoDTO.getItems()) {
-            // 4.1 Obtener el producto
-            Producto producto = productoRepository.findById(itemDTO.getProductoId())
-                    .orElseThrow(() -> new ProductoNotFoundException(itemDTO.getProductoId()));
-            
-            // 4.2 Validar stock disponible
-            if (producto.getStock() < itemDTO.getCantidad()) {
+            // 4.1 Obtener la variante comprada (producto + talle)
+            ProductoVariante variante = productoVarianteRepository.findById(itemDTO.getProductoVarianteId())
+                    .orElseThrow(() -> new ProductoNotFoundException(itemDTO.getProductoVarianteId()));
+            Producto producto = variante.getProducto();
+
+            // 4.2 Validar stock disponible en ese talle
+            if (variante.getStock() < itemDTO.getCantidad()) {
                 throw new StockInsuficienteException(
-                        producto.getName(), 
-                        producto.getStock(), 
+                        producto.getName() + " (talle " + variante.getTalle() + ")",
+                        variante.getStock(),
                         itemDTO.getCantidad()
                 );
             }
-            
+
             // 4.3 Crear detalle del pedido (asignando vendedor = owner del producto)
             DetallePedido detalle = DetallePedido.builder()
                     .pedido(pedido)
                     .producto(producto)
+                    .variante(variante)
+                    .talle(variante.getTalle())
                     .vendedor(producto.getOwnerUser())  // Asignar el vendedor (owner del producto)
                     .cantidad(itemDTO.getCantidad())
                     .precioUnitario(producto.getPrice())
                     .productoNombre(producto.getName())
-                    .productoImagen(producto.getImages() != null && !producto.getImages().isEmpty() 
-                            ? producto.getImages().get(0) 
+                    .productoImagen(producto.getImages() != null && !producto.getImages().isEmpty()
+                            ? producto.getImages().get(0)
                             : null)
                     .estadoItem(EstadoPedido.PENDIENTE)  // Estado inicial del item
                     .build();
-            
+
             // 4.4 Agregar detalle al pedido
             pedido.getItems().add(detalle);
-            
-            // 4.5 Descontar stock del producto
-            producto.setStock(producto.getStock() - itemDTO.getCantidad());
-            productoRepository.save(producto);
-            
+
+            // 4.5 Descontar stock de la variante comprada
+            variante.setStock(variante.getStock() - itemDTO.getCantidad());
+            productoVarianteRepository.save(variante);
+
             // 4.6 Calcular subtotal y agregar al total
             BigDecimal subtotal = producto.getPrice().multiply(BigDecimal.valueOf(itemDTO.getCantidad()));
             totalPedido = totalPedido.add(subtotal);
@@ -178,14 +181,14 @@ public class PedidoService {
             throw new IllegalArgumentException("Solo se pueden cancelar pedidos en estado PENDIENTE");
         }
         
-        // Devolver stock a los productos y actualizar estado de items
+        // Devolver stock a las variantes compradas y actualizar estado de items
         for (DetallePedido detalle : pedido.getItems()) {
             // Solo cancelar items que estén en estado PENDIENTE
             if (detalle.getEstadoItem() == EstadoPedido.PENDIENTE) {
-                Producto producto = detalle.getProducto();
-                if (producto != null) {
-                    producto.setStock(producto.getStock() + detalle.getCantidad());
-                    productoRepository.save(producto);
+                ProductoVariante variante = detalle.getVariante();
+                if (variante != null) {
+                    variante.setStock(variante.getStock() + detalle.getCantidad());
+                    productoVarianteRepository.save(variante);
                 }
                 detalle.setEstadoItem(EstadoPedido.CANCELADO_COMPRADOR);
             }
@@ -253,12 +256,12 @@ public class PedidoService {
         // Validar transiciones de estado válidas
         validarTransicionEstado(detalle.getEstadoItem(), nuevoEstado);
         
-        // Si se cancela por parte del vendedor, devolver stock
+        // Si se cancela por parte del vendedor, devolver stock a la variante comprada
         if (nuevoEstado == EstadoPedido.CANCELADO_VENDEDOR) {
-            Producto producto = detalle.getProducto();
-            if (producto != null) {
-                producto.setStock(producto.getStock() + detalle.getCantidad());
-                productoRepository.save(producto);
+            ProductoVariante variante = detalle.getVariante();
+            if (variante != null) {
+                variante.setStock(variante.getStock() + detalle.getCantidad());
+                productoVarianteRepository.save(variante);
             }
         }
         

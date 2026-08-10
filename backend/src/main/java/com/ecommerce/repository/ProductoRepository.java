@@ -18,12 +18,6 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     // Buscar productos por categoría
     List<Producto> findByCategoriaId(Long categoriaId);
     
-    // Buscar productos con stock disponible
-    List<Producto> findByStockGreaterThan(Integer stock);
-    
-    // Buscar productos sin stock
-    List<Producto> findByStockEquals(Integer stock);
-    
     // Buscar productos por rango de precio
     List<Producto> findByPriceBetween(java.math.BigDecimal precioMin, java.math.BigDecimal precioMax);
     

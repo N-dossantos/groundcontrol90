@@ -25,7 +25,8 @@ public class CreatePedidoDTO {
     @AllArgsConstructor
     @Builder
     public static class ItemCarritoDTO {
-        private Long productoId;
+        // Identifica la variante concreta (producto + talle), no solo el producto
+        private Long productoVarianteId;
         private Integer cantidad;
     }
 }

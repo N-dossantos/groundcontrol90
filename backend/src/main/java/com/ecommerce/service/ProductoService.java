@@ -1,9 +1,12 @@
 package com.ecommerce.service;
 
+import com.ecommerce.dto.ProductoVarianteDTO;
 import com.ecommerce.entity.Producto;
+import com.ecommerce.entity.ProductoVariante;
 import com.ecommerce.entity.Usuario;
 import com.ecommerce.exception.UsuarioNotFoundException;
 import com.ecommerce.repository.ProductoRepository;
+import com.ecommerce.repository.ProductoVarianteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -19,7 +23,10 @@ public class ProductoService {
 
     @Autowired
     private ProductoRepository productoRepository;
-    
+
+    @Autowired
+    private ProductoVarianteRepository productoVarianteRepository;
+
     @Autowired
     private UsuarioService usuarioService;
 
@@ -40,34 +47,78 @@ public class ProductoService {
     }
 
     /**
-     * Crear nuevo producto
+     * Crear nuevo producto con sus variantes de talle
      * Asigna automáticamente el producto al usuario (vendedor) que lo crea
      */
-    public Producto crearProducto(Producto producto, Long ownerUserId) {
+    public Producto crearProducto(Producto producto, Long ownerUserId, List<ProductoVarianteDTO> variantes) {
         // Obtener el usuario propietario
         Usuario ownerUser = usuarioService.findById(ownerUserId);
         if (ownerUser == null) {
             throw new UsuarioNotFoundException(ownerUserId);
         }
-        
+
         // Asignar el usuario como propietario del producto
         producto.setOwnerUser(ownerUser);
         producto.setCreatedAt(LocalDateTime.now());
-        
-        return productoRepository.save(producto);
+
+        Producto guardado = productoRepository.save(producto);
+        reemplazarVariantes(guardado, variantes);
+
+        return guardado;
     }
 
     /**
-     * Actualizar producto existente
+     * Actualizar producto existente y su lista de variantes
+     * Se modifica la entidad ya persistida en vez de guardar la que llega en el body,
+     * porque el body no trae el vendedor propietario ni la fecha de creación.
      */
-    public Optional<Producto> actualizarProducto(Long id, Producto productoActualizado) {
+    public Optional<Producto> actualizarProducto(Long id, Producto productoActualizado,
+                                                 List<ProductoVarianteDTO> variantes) {
         return productoRepository.findById(id)
                 .map(productoExistente -> {
-                productoActualizado.setId(id);
-                    productoActualizado.setCreatedAt(productoExistente.getCreatedAt()); // Preservar fecha de creación
-                productoActualizado.setUpdatedAt(LocalDateTime.now());
-                    return productoRepository.save(productoActualizado);
+                    productoExistente.setName(productoActualizado.getName());
+                    productoExistente.setDescription(productoActualizado.getDescription());
+                    productoExistente.setPrice(productoActualizado.getPrice());
+                    productoExistente.setClub(productoActualizado.getClub());
+                    productoExistente.setLiga(productoActualizado.getLiga());
+                    productoExistente.setTemporada(productoActualizado.getTemporada());
+                    productoExistente.setTipo(productoActualizado.getTipo());
+                    productoExistente.setImages(productoActualizado.getImages());
+                    productoExistente.setCategoria(productoActualizado.getCategoria());
+                    productoExistente.setUpdatedAt(LocalDateTime.now());
+
+                    Producto guardado = productoRepository.save(productoExistente);
+                    reemplazarVariantes(guardado, variantes);
+
+                    return guardado;
                 });
+    }
+
+    /**
+     * Reemplaza por completo las variantes (talles) de un producto por las recibidas.
+     * Las variantes que ya no vengan en la lista se eliminan.
+     */
+    public void reemplazarVariantes(Producto producto, List<ProductoVarianteDTO> variantesDTO) {
+        List<ProductoVariante> existentes = productoVarianteRepository.findByProductoId(producto.getId());
+        if (!existentes.isEmpty()) {
+            productoVarianteRepository.deleteAll(existentes);
+            // Los SKU son únicos: hay que materializar los DELETE antes de los INSERT
+            // para poder reutilizar un mismo SKU en la nueva lista.
+            productoVarianteRepository.flush();
+        }
+
+        List<ProductoVariante> nuevasVariantes = (variantesDTO == null ? List.<ProductoVarianteDTO>of() : variantesDTO)
+                .stream()
+                .map(dto -> ProductoVariante.builder()
+                        .producto(producto)
+                        .talle(dto.getTalle())
+                        .stock(dto.getStock())
+                        .sku(dto.getSku())
+                        .build())
+                .collect(Collectors.toList());
+
+        productoVarianteRepository.saveAll(nuevasVariantes);
+        producto.setVariantes(nuevasVariantes);
     }
 
     /**
@@ -99,18 +150,6 @@ public class ProductoService {
     @Transactional(readOnly = true)
     public List<Producto> buscarProductosPorCategoria(Long categoryId) {
         return productoRepository.findByCategoriaId(categoryId);
-    }
-
-    /**
-     * Buscar productos por disponibilidad de stock
-     */
-    @Transactional(readOnly = true)
-    public List<Producto> buscarProductosPorStock(boolean disponible) {
-        if (disponible) {
-            return productoRepository.findByStockGreaterThan(0);
-        } else {
-            return productoRepository.findByStockEquals(0);
-        }
     }
 
     /**

@@ -27,11 +27,20 @@ public class DetallePedido {
     @ToString.Exclude  // Evitar recursión infinita en toString
     private Pedido pedido;
     
-    // Relación con el producto
+    // Relación con el producto padre (se mantiene para poder agrupar por producto en reportes)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "producto_id", nullable = false)
     private Producto producto;
-    
+
+    // Relación con la variante concreta comprada (producto + talle)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "producto_variante_id", nullable = false)
+    private ProductoVariante variante;
+
+    // Guardamos el talle al momento de la compra (snapshot, por si la variante cambia o se elimina)
+    @Column(nullable = false)
+    private String talle;
+
     // Relación con el vendedor (owner del producto al momento de la compra)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vendedor_id", nullable = false)
@@ -68,6 +77,7 @@ public class DetallePedido {
         return "DetallePedido{" +
                 "id=" + id +
                 ", producto=" + (producto != null ? producto.getId() : null) +
+                ", talle='" + talle + '\'' +
                 ", vendedor=" + (vendedor != null ? vendedor.getId() : null) +
                 ", cantidad=" + cantidad +
                 ", precioUnitario=" + precioUnitario +

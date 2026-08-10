@@ -15,6 +15,8 @@ import java.math.BigDecimal;
 public class DetallePedidoDTO {
     private Long id;
     private Long productoId;
+    private Long productoVarianteId;
+    private String talle;
     private String productoNombre;
     private String productoImagen;
     private Integer cantidad;
@@ -33,6 +35,8 @@ public class DetallePedidoDTO {
     public DetallePedidoDTO(DetallePedido detalle) {
         this.id = detalle.getId();
         this.productoId = detalle.getProducto() != null ? detalle.getProducto().getId() : null;
+        this.productoVarianteId = detalle.getVariante() != null ? detalle.getVariante().getId() : null;
+        this.talle = detalle.getTalle();
         this.productoNombre = detalle.getProductoNombre();
         this.productoImagen = detalle.getProductoImagen();
         this.cantidad = detalle.getCantidad();
