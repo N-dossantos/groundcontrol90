@@ -1,22 +1,11 @@
 import { Link } from "react-router-dom"
-import { useCart } from "../context/CartContext"
-import { useToast } from "../context/ToastContext"
 import { formatPrice } from "../utils/formatters"
-import { ShoppingCart, Eye } from "lucide-react"
+import { Eye } from "lucide-react"
+// El talle es obligatorio para comprar, así que la card no agrega al carrito:
+// lleva a la ficha del producto, que es donde está el selector de talle.
 const ProductCard = ({ product }) => {
-  const { addToCart } = useCart()
-  const { success, error } = useToast()
-  const handleAddToCart = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (product.stock === 0) {
-      error("Producto sin stock")
-      return
-    }
-    addToCart(product)
-    success(`${product.name} agregado al carrito`)
-  }
-  const isOutOfStock = product.stock === 0
+  const isOutOfStock = (product.stockTotal ?? 0) === 0
+  const tallesDisponibles = product.variantes?.filter((v) => v.stock > 0).length ?? 0
   return (
     <div className="card overflow-hidden hover:shadow-lg transition-shadow duration-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
       <Link to={`/product/${product.id}`} className="block">
@@ -43,30 +32,20 @@ const ProductCard = ({ product }) => {
         {/* Product Info */}
         <div className="p-4">
           <h3 className="font-semibold text-gray-900 dark:text-white mb-1 line-clamp-2">{product.name}</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2 line-clamp-2">{product.description}</p>
-          <div className="flex items-center justify-between mb-3">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+            {product.club} • {product.temporada}
+          </p>
+          <div className="flex items-center justify-between mb-1">
             <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatPrice(product.price)}</span>
             <span className={`text-sm ${isOutOfStock ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
-              {isOutOfStock ? "Sin stock" : `${product.stock} disponibles`}
+              {isOutOfStock ? "Sin stock" : `${product.stockTotal} disponibles`}
             </span>
           </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+            {isOutOfStock ? "Sin stock" : `${tallesDisponibles} talles disponibles`}
+          </p>
         </div>
       </Link>
-      {/* Add to Cart Button */}
-      <div className="px-4 pb-4">
-        <button
-          onClick={handleAddToCart}
-          disabled={isOutOfStock}
-          className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-medium transition-colors ${
-            isOutOfStock
-              ? "bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-              : "bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-          }`}
-        >
-          <ShoppingCart size={16} />
-          {isOutOfStock ? "Sin Stock" : "Agregar al Carrito"}
-        </button>
-      </div>
     </div>
   )
 }

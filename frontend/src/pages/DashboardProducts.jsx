@@ -151,8 +151,8 @@ const DashboardProducts = () => {
         {/* Stats */}
         <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
           <span>Total: {userProducts.length} productos</span>
-          <span>En stock: {userProducts.filter((p) => p.stock > 0).length}</span>
-          <span>Sin stock: {userProducts.filter((p) => p.stock === 0).length}</span>
+          <span>En stock: {userProducts.filter((p) => (p.stockTotal ?? 0) > 0).length}</span>
+          <span>Sin stock: {userProducts.filter((p) => (p.stockTotal ?? 0) === 0).length}</span>
           {searchTerm && (
             <span className="text-blue-600 dark:text-blue-400">
               Filtrados: {filteredProducts.length}
@@ -224,7 +224,11 @@ const DashboardProducts = () => {
   )
 }
 const ProductRow = ({ product, onDelete, isDeleting }) => {
-  const isOutOfStock = product.stock === 0
+  const stockTotal = product.stockTotal ?? 0
+  const isOutOfStock = stockTotal === 0
+  // Talles cuyo inventario está por agotarse: es lo accionable para el vendedor,
+  // el total del producto puede verse sano y esconder un talle en cero.
+  const tallesBajos = product.variantes?.filter((v) => v.stock <= 5) ?? []
   return (
     <div className="card p-6">
       <div className="flex items-center space-x-4">
@@ -245,7 +249,7 @@ const ProductRow = ({ product, onDelete, isDeleting }) => {
               <div className="flex items-center gap-4 mt-2">
                 <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatPrice(product.price)}</span>
                 <span className={`text-sm font-medium ${isOutOfStock ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
-                  {isOutOfStock ? "Sin stock" : `${product.stock} en stock`}
+                  {isOutOfStock ? "Sin stock" : `${stockTotal} en stock (${product.variantes?.length ?? 0} talles)`}
                 </span>
                 <span className="text-sm text-gray-500 dark:text-gray-400">Creado: {formatDate(product.createdAt)}</span>
               </div>
@@ -279,9 +283,12 @@ const ProductRow = ({ product, onDelete, isDeleting }) => {
         </div>
       </div>
       {/* Stock Warning */}
-      {product.stock <= 5 && product.stock > 0 && (
+      {tallesBajos.length > 0 && (
         <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-          <p className="text-sm text-yellow-800 dark:text-yellow-200">⚠️ Stock bajo: Solo quedan {product.stock} unidades</p>
+          <p className="text-sm text-yellow-800 dark:text-yellow-200">
+            ⚠️ Stock bajo por talle:{" "}
+            {tallesBajos.map((v) => `${v.talle} (${v.stock})`).join(", ")}
+          </p>
         </div>
       )}
     </div>

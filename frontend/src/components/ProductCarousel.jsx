@@ -76,7 +76,7 @@ const ProductCarousel = ({ products, title = "Productos Destacados" }) => {
                           alt={product.name}
                           className="w-full h-full object-cover rounded-lg shadow-2xl"
                         />
-                        {product.stock === 0 && (
+                        {(product.stockTotal ?? 0) === 0 && (
                           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
                             <span className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-medium">
                               Sin Stock
@@ -90,6 +90,9 @@ const ProductCarousel = ({ products, title = "Productos Destacados" }) => {
                     <div className="flex flex-col justify-center text-white">
                       <div className="mb-4">
                         <h3 className="text-3xl font-bold mb-2">{product.name}</h3>
+                        <p className="text-sm opacity-75 mb-1">
+                          {product.club} • {product.temporada}
+                        </p>
                         <p className="text-lg opacity-90 line-clamp-2">{product.description}</p>
                       </div>
 
@@ -108,8 +111,8 @@ const ProductCarousel = ({ products, title = "Productos Destacados" }) => {
 
                       <div className="flex items-center justify-between mb-6">
                         <span className="text-4xl font-bold">{formatPrice(product.price)}</span>
-                        <span className={`text-lg font-medium ${product.stock === 0 ? "text-red-300" : "text-green-300"}`}>
-                          {product.stock === 0 ? "Sin stock" : `${product.stock} disponibles`}
+                        <span className={`text-lg font-medium ${(product.stockTotal ?? 0) === 0 ? "text-red-300" : "text-green-300"}`}>
+                          {(product.stockTotal ?? 0) === 0 ? "Sin stock" : `${product.stockTotal} disponibles`}
                         </span>
                       </div>
 

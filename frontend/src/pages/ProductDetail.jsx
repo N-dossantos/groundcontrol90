@@ -11,6 +11,7 @@ import { ArrowLeft, ShoppingCart, Package, Star } from "lucide-react"
 const ProductDetail = () => {
   const { id } = useParams()
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [selectedTalle, setSelectedTalle] = useState(null)
   const { addToCart } = useCart()
   const { success, error } = useToast()
   const { data: product, loading, error: fetchError } = useFetch(() => api.getProduct(id), [id])
@@ -22,12 +23,12 @@ const ProductDetail = () => {
   )
   const handleAddToCart = () => {
     if (!product) return
-    if (product.stock === 0) {
-      error("Producto sin stock")
+    if (!selectedTalle) {
+      error("Elegí un talle antes de agregar al carrito")
       return
     }
-    addToCart(product)
-    success(`${product.name} agregado al carrito`)
+    addToCart(product, selectedTalle)
+    success(`${product.name} (talle ${selectedTalle.talle}) agregado al carrito`)
   }
   if (loading) {
     return (
@@ -48,7 +49,7 @@ const ProductDetail = () => {
       </div>
     )
   }
-  const isOutOfStock = product.stock === 0
+  const isOutOfStock = (product.stockTotal ?? 0) === 0
   const images = product.images || ["/placeholder.svg?height=500&width=500"]
   
   // Filter related products (exclude current product and limit to 4)
@@ -115,26 +116,41 @@ const ProductDetail = () => {
               <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">(4.0) • 24 reseñas</span>
             </div>
           </div>
-          {/* Price and Stock */}
+          {/* Precio y selector de talle */}
           <div className="border-t border-b border-gray-200 dark:border-gray-600 py-6">
             <div className="flex items-center justify-between mb-4">
               <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">{formatPrice(product.price)}</span>
               <span className={`text-lg font-medium ${isOutOfStock ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
-                {isOutOfStock ? "Sin stock" : `${product.stock} disponibles`}
+                {isOutOfStock ? "Sin stock" : `${product.stockTotal} disponibles`}
               </span>
             </div>
-            {/* Stock indicator */}
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div
-                className={`h-2 rounded-full ${
-                  product.stock > 10 ? "bg-green-500" : product.stock > 5 ? "bg-yellow-500" : "bg-red-500"
-                }`}
-                style={{ width: `${Math.min((product.stock / 20) * 100, 100)}%` }}
-              ></div>
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Talle</p>
+              <div className="flex flex-wrap gap-2">
+                {product.variantes?.map((variante) => (
+                  <button
+                    key={variante.id}
+                    type="button"
+                    disabled={variante.stock === 0}
+                    onClick={() => setSelectedTalle(variante)}
+                    className={`px-4 py-2 rounded-lg border text-sm font-medium ${
+                      variante.stock === 0
+                        ? "border-gray-200 text-gray-300 cursor-not-allowed dark:border-gray-700 dark:text-gray-600"
+                        : selectedTalle?.id === variante.id
+                          ? "border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+                          : "border-gray-300 text-gray-700 hover:border-blue-400 dark:border-gray-600 dark:text-gray-300"
+                    }`}
+                  >
+                    {variante.talle}
+                  </button>
+                ))}
+              </div>
+              {selectedTalle && (
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  {selectedTalle.stock} disponibles en talle {selectedTalle.talle}
+                </p>
+              )}
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {product.stock > 10 ? "En stock" : product.stock > 0 ? "Pocas unidades" : "Agotado"}
-            </p>
           </div>
           {/* Description */}
           <div>
@@ -145,15 +161,15 @@ const ProductDetail = () => {
           <div className="space-y-4">
             <button
               onClick={handleAddToCart}
-              disabled={isOutOfStock}
+              disabled={!selectedTalle}
               className={`w-full flex items-center justify-center gap-3 py-3 px-6 rounded-lg font-medium text-lg transition-colors ${
-                isOutOfStock
+                !selectedTalle
                   ? "bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                   : "bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
               }`}
             >
               <ShoppingCart size={20} />
-              {isOutOfStock ? "Producto Agotado" : "Agregar al Carrito"}
+              {isOutOfStock ? "Producto Agotado" : selectedTalle ? "Agregar al Carrito" : "Elegí un talle"}
             </button>
             {!isOutOfStock && (
               <p className="text-sm text-gray-600 dark:text-gray-400 text-center">Envío gratis en pedidos superiores a €50</p>
@@ -164,8 +180,28 @@ const ProductDetail = () => {
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Detalles del producto</h3>
             <dl className="space-y-2">
               <div className="flex justify-between">
+                <dt className="text-gray-600 dark:text-gray-400">Club:</dt>
+                <dd className="text-gray-900 dark:text-gray-100">{product.club}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-gray-600 dark:text-gray-400">Liga:</dt>
+                <dd className="text-gray-900 dark:text-gray-100">{product.liga}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-gray-600 dark:text-gray-400">Temporada:</dt>
+                <dd className="text-gray-900 dark:text-gray-100">{product.temporada}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-gray-600 dark:text-gray-400">Tipo:</dt>
+                <dd className="text-gray-900 dark:text-gray-100">
+                  {product.tipo === "SHORT" ? "Short" : "Camiseta"}
+                </dd>
+              </div>
+              <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">SKU:</dt>
-                <dd className="text-gray-900 dark:text-gray-100">#{product.id.toString().padStart(6, "0")}</dd>
+                <dd className="text-gray-900 dark:text-gray-100">
+                  {selectedTalle ? selectedTalle.sku : "Elegí un talle"}
+                </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-gray-600 dark:text-gray-400">Disponibilidad:</dt>
