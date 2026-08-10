@@ -31,6 +31,20 @@ class CorsConfigTest {
         assertTrue(resolved.getAllowCredentials());
     }
 
+    @Test
+    @DisplayName("No debería aplicar CORS a rutas fuera de /api/**")
+    void testCorsConfigurationSource_NoAplicaFueraDeApi() throws Exception {
+        CorsConfig corsConfig = new CorsConfig();
+        setAllowedOrigins(corsConfig, "https://tienda.com, https://admin.tienda.com");
+
+        CorsConfigurationSource source = corsConfig.corsConfigurationSource();
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/actuator/health");
+        CorsConfiguration resolved = source.getCorsConfiguration(request);
+
+        assertNull(resolved);
+    }
+
     private void setAllowedOrigins(CorsConfig target, String value) throws Exception {
         Field field = CorsConfig.class.getDeclaredField("allowedOriginsRaw");
         field.setAccessible(true);
