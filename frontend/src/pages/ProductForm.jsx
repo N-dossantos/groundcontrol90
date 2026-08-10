@@ -18,7 +18,11 @@ const ProductForm = () => {
     name: "",
     description: "",
     price: "",
-    stock: "",
+    club: "",
+    liga: "",
+    temporada: "",
+    tipo: "CAMISETA",
+    variantes: [{ talle: "", stock: "", sku: "" }],
     categoryId: "",
     images: [],
   })
@@ -38,7 +42,13 @@ const ProductForm = () => {
         name: product.name || "",
         description: product.description || "",
         price: product.price?.toString() || "",
-        stock: product.stock?.toString() || "",
+        club: product.club || "",
+        liga: product.liga || "",
+        temporada: product.temporada || "",
+        tipo: product.tipo || "CAMISETA",
+        variantes: product.variantes?.length
+          ? product.variantes.map((v) => ({ talle: v.talle, stock: v.stock?.toString() ?? "", sku: v.sku }))
+          : [{ talle: "", stock: "", sku: "" }],
         categoryId: product.categoryId?.toString() || "",
         images: product.images || [],
       })
@@ -57,6 +67,22 @@ const ProductForm = () => {
         [name]: "",
       }))
     }
+  }
+  const handleVarianteChange = (index, field, value) => {
+    setFormData((prev) => {
+      const variantes = [...prev.variantes]
+      variantes[index] = { ...variantes[index], [field]: value }
+      return { ...prev, variantes }
+    })
+    if (errors.variantes) {
+      setErrors((prev) => ({ ...prev, variantes: "" }))
+    }
+  }
+  const addVariante = () => {
+    setFormData((prev) => ({ ...prev, variantes: [...prev.variantes, { talle: "", stock: "", sku: "" }] }))
+  }
+  const removeVariante = (index) => {
+    setFormData((prev) => ({ ...prev, variantes: prev.variantes.filter((_, i) => i !== index) }))
   }
   const handleImagesChange = (images) => {
     setFormData((prev) => ({
@@ -83,10 +109,21 @@ const ProductForm = () => {
     } else if (!validatePrice(formData.price)) {
       newErrors.price = "El precio debe ser un número mayor a 0"
     }
-    if (!validateRequired(formData.stock)) {
-      newErrors.stock = "El stock es requerido"
-    } else if (!validateStock(formData.stock)) {
-      newErrors.stock = "El stock debe ser un número mayor o igual a 0"
+    if (!validateRequired(formData.club)) {
+      newErrors.club = "El club es requerido"
+    }
+    if (!validateRequired(formData.liga)) {
+      newErrors.liga = "La liga es requerida"
+    }
+    if (!validateRequired(formData.temporada)) {
+      newErrors.temporada = "La temporada es requerida"
+    }
+    if (formData.variantes.some((v) => !v.talle || v.stock === "" || !v.sku)) {
+      newErrors.variantes = "Completá talle, stock y SKU para cada variante"
+    } else if (formData.variantes.some((v) => !validateStock(v.stock))) {
+      newErrors.variantes = "El stock de cada talle debe ser un número mayor o igual a 0"
+    } else if (new Set(formData.variantes.map((v) => v.talle)).size !== formData.variantes.length) {
+      newErrors.variantes = "No repitas el mismo talle en dos variantes"
     }
     if (!validateRequired(formData.categoryId)) {
       newErrors.categoryId = "La categoría es requerida"
@@ -108,7 +145,15 @@ const ProductForm = () => {
         name: formData.name.trim(),
         description: formData.description.trim(),
         price: Number.parseFloat(formData.price),
-        stock: Number.parseInt(formData.stock),
+        club: formData.club.trim(),
+        liga: formData.liga.trim(),
+        temporada: formData.temporada.trim(),
+        tipo: formData.tipo,
+        variantes: formData.variantes.map((v) => ({
+          talle: v.talle,
+          stock: Number.parseInt(v.stock),
+          sku: v.sku.trim(),
+        })),
         categoryId: Number.parseInt(formData.categoryId),
         images: formData.images,
         ownerUserId: user.id, // Keep original type (string or number)
@@ -185,7 +230,7 @@ const ProductForm = () => {
               value={formData.name}
               onChange={handleChange}
               className={`input ${errors.name ? "border-red-500 focus:ring-red-500" : ""}`}
-              placeholder="Ej: iPhone 15 Pro Max"
+              placeholder="Ej: Camiseta Titular Boca Juniors 2026"
             />
             {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
           </div>
@@ -205,41 +250,129 @@ const ProductForm = () => {
             />
             {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
           </div>
-          {/* Price and Stock */}
+          {/* Price */}
+          <div className="mb-6">
+            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
+              Precio (€) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              id="price"
+              name="price"
+              step="0.01"
+              min="0"
+              value={formData.price}
+              onChange={handleChange}
+              className={`input ${errors.price ? "border-red-500 focus:ring-red-500" : ""}`}
+              placeholder="0.00"
+            />
+            {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price}</p>}
+          </div>
+          {/* Club, liga, temporada y tipo */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
             <div>
-              <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
-                Precio (€) <span className="text-red-500">*</span>
+              <label htmlFor="club" className="block text-sm font-medium text-gray-700 mb-2">
+                Club <span className="text-red-500">*</span>
               </label>
               <input
-                type="number"
-                id="price"
-                name="price"
-                step="0.01"
-                min="0"
-                value={formData.price}
+                type="text"
+                id="club"
+                name="club"
+                value={formData.club}
                 onChange={handleChange}
-                className={`input ${errors.price ? "border-red-500 focus:ring-red-500" : ""}`}
-                placeholder="0.00"
+                className={`input ${errors.club ? "border-red-500 focus:ring-red-500" : ""}`}
+                placeholder="Ej: Boca Juniors"
               />
-              {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price}</p>}
+              {errors.club && <p className="mt-1 text-sm text-red-600">{errors.club}</p>}
             </div>
             <div>
-              <label htmlFor="stock" className="block text-sm font-medium text-gray-700 mb-2">
-                Stock <span className="text-red-500">*</span>
+              <label htmlFor="liga" className="block text-sm font-medium text-gray-700 mb-2">
+                Liga <span className="text-red-500">*</span>
               </label>
               <input
-                type="number"
-                id="stock"
-                name="stock"
-                min="0"
-                value={formData.stock}
+                type="text"
+                id="liga"
+                name="liga"
+                value={formData.liga}
                 onChange={handleChange}
-                className={`input ${errors.stock ? "border-red-500 focus:ring-red-500" : ""}`}
-                placeholder="0"
+                className={`input ${errors.liga ? "border-red-500 focus:ring-red-500" : ""}`}
+                placeholder="Ej: Liga Profesional Argentina"
               />
-              {errors.stock && <p className="mt-1 text-sm text-red-600">{errors.stock}</p>}
+              {errors.liga && <p className="mt-1 text-sm text-red-600">{errors.liga}</p>}
             </div>
+            <div>
+              <label htmlFor="temporada" className="block text-sm font-medium text-gray-700 mb-2">
+                Temporada <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="temporada"
+                name="temporada"
+                value={formData.temporada}
+                onChange={handleChange}
+                className={`input ${errors.temporada ? "border-red-500 focus:ring-red-500" : ""}`}
+                placeholder="Ej: 2026"
+              />
+              {errors.temporada && <p className="mt-1 text-sm text-red-600">{errors.temporada}</p>}
+            </div>
+            <div>
+              <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 mb-2">
+                Tipo <span className="text-red-500">*</span>
+              </label>
+              <select id="tipo" name="tipo" value={formData.tipo} onChange={handleChange} className="input">
+                <option value="CAMISETA">Camiseta</option>
+                <option value="SHORT">Short</option>
+              </select>
+            </div>
+          </div>
+          {/* Talles y stock */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Talles y stock <span className="text-red-500">*</span>
+            </label>
+            {formData.variantes.map((variante, index) => (
+              <div key={index} className="flex gap-3 mb-2">
+                <select
+                  value={variante.talle}
+                  onChange={(e) => handleVarianteChange(index, "talle", e.target.value)}
+                  className="input"
+                  aria-label={`Talle de la variante ${index + 1}`}
+                >
+                  <option value="">Talle</option>
+                  {["XS", "S", "M", "L", "XL", "XXL"].map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Stock"
+                  value={variante.stock}
+                  onChange={(e) => handleVarianteChange(index, "stock", e.target.value)}
+                  className="input"
+                  aria-label={`Stock de la variante ${index + 1}`}
+                />
+                <input
+                  type="text"
+                  placeholder="SKU"
+                  value={variante.sku}
+                  onChange={(e) => handleVarianteChange(index, "sku", e.target.value)}
+                  className="input"
+                  aria-label={`SKU de la variante ${index + 1}`}
+                />
+                {formData.variantes.length > 1 && (
+                  <button type="button" onClick={() => removeVariante(index)} className="btn btn-secondary">
+                    Quitar
+                  </button>
+                )}
+              </div>
+            ))}
+            <button type="button" onClick={addVariante} className="btn btn-secondary mt-2">
+              Agregar talle
+            </button>
+            {errors.variantes && <p className="mt-1 text-sm text-red-600">{errors.variantes}</p>}
           </div>
           {/* Category */}
           <div className="mb-6">
