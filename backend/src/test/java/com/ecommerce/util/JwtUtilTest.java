@@ -1,6 +1,5 @@
 package com.ecommerce.util;
 
-import io.jsonwebtoken.security.WeakKeyException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,9 +52,9 @@ class JwtUtilTest {
     @DisplayName("init() debería fallar si jwt.secret es demasiado corto para HS512")
     void testInit_ThrowsWhenSecretTooShort() throws Exception {
         JwtUtil secretCorto = new JwtUtil();
-        setFieldOn(secretCorto, "secret", "muy-corto");
+        setFieldOn(secretCorto, "secret", "1234567890123456789012345678901234567890"); // 40 bytes (320 bits)
 
-        assertThrows(WeakKeyException.class, secretCorto::init);
+        assertThrows(IllegalStateException.class, secretCorto::init);
     }
 
     private void setFieldOn(JwtUtil target, String name, Object value) throws Exception {

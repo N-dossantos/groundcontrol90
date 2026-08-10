@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Component
@@ -26,7 +27,12 @@ public class JwtUtil {
             throw new IllegalStateException(
                     "jwt.secret no está configurado. Definí la variable de entorno JWT_SECRET.");
         }
-        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes());
+        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (keyBytes.length < 64) {
+            throw new IllegalStateException(
+                    "jwt.secret debe tener al menos 64 bytes para HS512; tiene " + keyBytes.length + ".");
+        }
+        this.signingKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
     private SecretKey getSigningKey() {
