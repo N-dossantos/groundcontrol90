@@ -37,10 +37,10 @@ class ProductoFiltroTest {
 
     @BeforeEach
     void setUp() {
-        // El DataInitializer siembra el catálogo de ejemplo al levantar el contexto:
-        // se limpia para que las aserciones cuenten solo los productos de este test.
+        // Se vacía el catálogo para que las aserciones cuenten solo los productos de
+        // este test, sin depender de lo que haya dejado el contexto compartido.
         // La transacción del test hace rollback al terminar, así que el resto de la
-        // suite sigue viendo los datos sembrados.
+        // suite no se ve afectado.
         productoVarianteRepository.deleteAllInBatch();
         productoRepository.deleteAllInBatch();
 
