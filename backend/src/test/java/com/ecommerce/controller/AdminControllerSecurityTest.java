@@ -13,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -20,6 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Transactional
 @DisplayName("Tests de Integración - Seguridad de AdminController")
 class AdminControllerSecurityTest {
 
@@ -40,7 +42,14 @@ class AdminControllerSecurityTest {
 
     @BeforeEach
     void setUp() {
+        // flush() fuerza el DELETE físico ya (en vez de dejarlo pendiente en la
+        // sesión de Hibernate): Usuario usa GenerationType.IDENTITY, que fuerza un
+        // INSERT inmediato en cada save() de más abajo. Sin este flush, ese INSERT
+        // puede ejecutarse antes de que el DELETE en cola llegue a la base y
+        // choca contra filas ya existentes (p.ej. las que siembra DataInitializer
+        // al arrancar el contexto).
         usuarioRepository.deleteAll();
+        usuarioRepository.flush();
 
         Usuario usuario = usuarioRepository.save(Usuario.builder()
                 .nombre("Juan").apellido("Pérez").username("juan").email("juan@test.com")
@@ -67,5 +76,17 @@ class AdminControllerSecurityTest {
         mockMvc.perform(get("/api/admin/usuarios")
                         .header("Authorization", "Bearer " + tokenAdmin))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Sin token no se puede listar usuarios vía /api/admin/usuarios")
+    void testListarUsuarios_SinToken_Forbidden() throws Exception {
+        // Se espera 403 y no 401: SecurityConfig no configura .httpBasic()/.formLogin()/
+        // .exceptionHandling() con un AuthenticationEntryPoint propio, así que Spring usa
+        // Http403ForbiddenEntryPoint por defecto, y AnonymousAuthenticationFilter deja pasar
+        // la request sin token como "anónima" hasta el mismo AccessDeniedHandler que deniega
+        // por rol. En esta app, 401 es inalcanzable para este endpoint.
+        mockMvc.perform(get("/api/admin/usuarios"))
+                .andExpect(status().isForbidden());
     }
 }
