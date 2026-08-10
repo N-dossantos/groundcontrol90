@@ -15,6 +15,9 @@ public interface DetallePedidoRepository extends JpaRepository<DetallePedido, Lo
     
     // Buscar detalles por producto
     List<DetallePedido> findByProductoId(Long productoId);
+
+    // ¿Esta variante (talle) ya se vendió alguna vez?
+    boolean existsByVarianteId(Long varianteId);
     
     // ========== MÉTODOS PARA VENDEDORES ==========
     

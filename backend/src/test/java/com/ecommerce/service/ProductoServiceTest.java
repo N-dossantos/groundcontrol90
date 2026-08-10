@@ -7,7 +7,6 @@ import com.ecommerce.entity.ProductoVariante;
 import com.ecommerce.entity.TipoProducto;
 import com.ecommerce.entity.Usuario;
 import com.ecommerce.repository.ProductoRepository;
-import com.ecommerce.repository.ProductoVarianteRepository;
 import com.ecommerce.service.UsuarioService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,9 +32,6 @@ class ProductoServiceTest {
 
     @Mock
     private ProductoRepository productoRepository;
-
-    @Mock
-    private ProductoVarianteRepository productoVarianteRepository;
 
     @Mock
     private UsuarioService usuarioService;
@@ -203,7 +199,6 @@ class ProductoServiceTest {
 
         when(usuarioService.findById(1L)).thenReturn(usuario);
         when(productoRepository.save(any(Producto.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(productoVarianteRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
         Producto creado = productoService.crearProducto(nuevo, 1L, variantes);

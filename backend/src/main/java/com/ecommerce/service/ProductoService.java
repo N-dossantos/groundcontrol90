@@ -6,8 +6,9 @@ import com.ecommerce.entity.Producto;
 import com.ecommerce.entity.ProductoVariante;
 import com.ecommerce.entity.Usuario;
 import com.ecommerce.exception.UsuarioNotFoundException;
+import com.ecommerce.exception.ValidationException;
+import com.ecommerce.repository.DetallePedidoRepository;
 import com.ecommerce.repository.ProductoRepository;
-import com.ecommerce.repository.ProductoVarianteRepository;
 import com.ecommerce.repository.spec.ProductoSpecifications;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,8 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,7 +30,7 @@ public class ProductoService {
     private ProductoRepository productoRepository;
 
     @Autowired
-    private ProductoVarianteRepository productoVarianteRepository;
+    private DetallePedidoRepository detallePedidoRepository;
 
     @Autowired
     private UsuarioService usuarioService;
@@ -97,30 +100,60 @@ public class ProductoService {
     }
 
     /**
-     * Reemplaza por completo las variantes (talles) de un producto por las recibidas.
-     * Las variantes que ya no vengan en la lista se eliminan.
+     * Deja las variantes (talles) del producto igual a la lista recibida.
+     *
+     * Las variantes se aparean por talle y se actualizan en su lugar en vez de borrarlas
+     * y recrearlas: su id es lo que referencian el historial de pedidos y los carritos
+     * de los compradores, así que recrearlas rompería ambos.
      */
     public void reemplazarVariantes(Producto producto, List<ProductoVarianteDTO> variantesDTO) {
-        List<ProductoVariante> existentes = productoVarianteRepository.findByProductoId(producto.getId());
-        if (!existentes.isEmpty()) {
-            productoVarianteRepository.deleteAll(existentes);
-            // Los SKU son únicos: hay que materializar los DELETE antes de los INSERT
-            // para poder reutilizar un mismo SKU en la nueva lista.
-            productoVarianteRepository.flush();
-        }
+        List<ProductoVarianteDTO> deseadas = variantesDTO == null ? List.of() : variantesDTO;
 
-        List<ProductoVariante> nuevasVariantes = (variantesDTO == null ? List.<ProductoVarianteDTO>of() : variantesDTO)
-                .stream()
-                .map(dto -> ProductoVariante.builder()
-                        .producto(producto)
-                        .talle(dto.getTalle())
-                        .stock(dto.getStock())
-                        .sku(dto.getSku())
-                        .build())
+        // La colección se muta en vez de sustituirla por otra instancia: con orphanRemoval,
+        // Hibernate falla al commit si el producto deja de referenciar la que él administra.
+        if (producto.getVariantes() == null) {
+            producto.setVariantes(new ArrayList<>());
+        }
+        List<ProductoVariante> actuales = producto.getVariantes();
+
+        Set<String> tallesDeseados = deseadas.stream()
+                .map(ProductoVarianteDTO::getTalle)
+                .collect(Collectors.toSet());
+
+        List<ProductoVariante> aEliminar = actuales.stream()
+                .filter(variante -> !tallesDeseados.contains(variante.getTalle()))
                 .collect(Collectors.toList());
 
-        productoVarianteRepository.saveAll(nuevasVariantes);
-        producto.setVariantes(nuevasVariantes);
+        for (ProductoVariante variante : aEliminar) {
+            // Un talle ya vendido no se puede borrar: el detalle del pedido lo referencia.
+            // Para dejar de ofrecerlo, el vendedor le pone stock 0.
+            if (variante.getId() != null && detallePedidoRepository.existsByVarianteId(variante.getId())) {
+                throw new ValidationException("No se puede eliminar el talle " + variante.getTalle()
+                        + " porque ya tiene ventas. Poné su stock en 0 para dejar de ofrecerlo.");
+            }
+        }
+        actuales.removeAll(aEliminar);
+
+        // El flush materializa los DELETE antes de los INSERT de más abajo: el sku es único
+        // y una edición puede reutilizar en un talle el sku de otro que se está eliminando.
+        productoRepository.flush();
+
+        for (ProductoVarianteDTO dto : deseadas) {
+            actuales.stream()
+                    .filter(variante -> dto.getTalle().equals(variante.getTalle()))
+                    .findFirst()
+                    .ifPresentOrElse(
+                            existente -> {
+                                existente.setStock(dto.getStock());
+                                existente.setSku(dto.getSku());
+                            },
+                            () -> actuales.add(ProductoVariante.builder()
+                                    .producto(producto)
+                                    .talle(dto.getTalle())
+                                    .stock(dto.getStock())
+                                    .sku(dto.getSku())
+                                    .build()));
+        }
     }
 
     /**
