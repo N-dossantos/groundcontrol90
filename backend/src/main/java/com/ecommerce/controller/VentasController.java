@@ -3,11 +3,11 @@ package com.ecommerce.controller;
 import com.ecommerce.dto.VentaDTO;
 import com.ecommerce.entity.DetallePedido;
 import com.ecommerce.entity.EstadoPedido;
-import com.ecommerce.exception.UnauthorizedException;
+import com.ecommerce.entity.Usuario;
 import com.ecommerce.service.PedidoService;
-import com.ecommerce.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -25,23 +25,14 @@ public class VentasController {
     
     @Autowired
     private PedidoService pedidoService;
-    
-    @Autowired
-    private JwtUtil jwtUtil;
-    
+
     /**
      * GET /api/ventas/mis-ventas
      * Obtiene todas las ventas del usuario autenticado (como vendedor)
      */
     @GetMapping("/mis-ventas")
-    public ResponseEntity<?> obtenerMisVentas(
-            @RequestHeader(value = "Authorization", required = false) String authHeader) {
-        Long vendedorId = getUserIdFromAuth(authHeader);
-        if (vendedorId == null) {
-            throw new UnauthorizedException("Debe iniciar sesión para ver sus ventas");
-        }
-        
-        List<VentaDTO> ventas = pedidoService.obtenerVentasPorVendedor(vendedorId)
+    public ResponseEntity<?> obtenerMisVentas(@AuthenticationPrincipal Usuario vendedor) {
+        List<VentaDTO> ventas = pedidoService.obtenerVentasPorVendedor(vendedor.getId())
                 .stream()
                 .map(VentaDTO::new)
                 .collect(Collectors.toList());
@@ -56,20 +47,15 @@ public class VentasController {
     @GetMapping("/mis-ventas/estado/{estado}")
     public ResponseEntity<?> obtenerMisVentasPorEstado(
             @PathVariable String estado,
-            @RequestHeader(value = "Authorization", required = false) String authHeader) {
-        Long vendedorId = getUserIdFromAuth(authHeader);
-        if (vendedorId == null) {
-            throw new UnauthorizedException("Debe iniciar sesión");
-        }
-        
+            @AuthenticationPrincipal Usuario vendedor) {
         EstadoPedido estadoPedido;
         try {
             estadoPedido = EstadoPedido.valueOf(estado.toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Estado inválido: " + estado);
         }
-        
-        List<VentaDTO> ventas = pedidoService.obtenerVentasPorVendedorYEstado(vendedorId, estadoPedido)
+
+        List<VentaDTO> ventas = pedidoService.obtenerVentasPorVendedorYEstado(vendedor.getId(), estadoPedido)
                 .stream()
                 .map(VentaDTO::new)
                 .collect(Collectors.toList());
@@ -84,13 +70,8 @@ public class VentasController {
     @GetMapping("/{detalleId}")
     public ResponseEntity<?> obtenerVentaPorId(
             @PathVariable Long detalleId,
-            @RequestHeader(value = "Authorization", required = false) String authHeader) {
-        Long vendedorId = getUserIdFromAuth(authHeader);
-        if (vendedorId == null) {
-            throw new UnauthorizedException("Debe iniciar sesión");
-        }
-        
-        DetallePedido detalle = pedidoService.obtenerVentaPorId(detalleId, vendedorId);
+            @AuthenticationPrincipal Usuario vendedor) {
+        DetallePedido detalle = pedidoService.obtenerVentaPorId(detalleId, vendedor.getId());
         return ResponseEntity.ok(new VentaDTO(detalle));
     }
     
@@ -103,20 +84,15 @@ public class VentasController {
     public ResponseEntity<?> actualizarEstadoVenta(
             @PathVariable Long detalleId,
             @RequestParam String estado,
-            @RequestHeader(value = "Authorization", required = false) String authHeader) {
-        Long vendedorId = getUserIdFromAuth(authHeader);
-        if (vendedorId == null) {
-            throw new UnauthorizedException("Debe iniciar sesión");
-        }
-        
+            @AuthenticationPrincipal Usuario vendedor) {
         EstadoPedido nuevoEstado;
         try {
             nuevoEstado = EstadoPedido.valueOf(estado.toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Estado inválido: " + estado);
         }
-        
-        DetallePedido detalle = pedidoService.actualizarEstadoItem(detalleId, vendedorId, nuevoEstado);
+
+        DetallePedido detalle = pedidoService.actualizarEstadoItem(detalleId, vendedor.getId(), nuevoEstado);
         return ResponseEntity.ok(new VentaDTO(detalle));
     }
     
@@ -125,14 +101,8 @@ public class VentasController {
      * Obtiene estadísticas de ventas del vendedor
      */
     @GetMapping("/estadisticas")
-    public ResponseEntity<?> obtenerEstadisticasVentas(
-            @RequestHeader(value = "Authorization", required = false) String authHeader) {
-        Long vendedorId = getUserIdFromAuth(authHeader);
-        if (vendedorId == null) {
-            throw new UnauthorizedException("Debe iniciar sesión");
-        }
-        
-        List<DetallePedido> todasLasVentas = pedidoService.obtenerVentasPorVendedor(vendedorId);
+    public ResponseEntity<?> obtenerEstadisticasVentas(@AuthenticationPrincipal Usuario vendedor) {
+        List<DetallePedido> todasLasVentas = pedidoService.obtenerVentasPorVendedor(vendedor.getId());
         
         Map<String, Object> estadisticas = new HashMap<>();
         estadisticas.put("totalVentas", todasLasVentas.size());
@@ -162,24 +132,6 @@ public class VentasController {
         
         return ResponseEntity.ok(estadisticas);
     }
-    
-    // ===== MÉTODOS AUXILIARES =====
-    
-    /**
-     * Extrae el ID del usuario del token JWT
-     */
-    private Long getUserIdFromAuth(String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return null;
-        }
-        
-        try {
-            String token = authHeader.substring(7);
-            return jwtUtil.getUserIdFromToken(token);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-    
+
 }
 
