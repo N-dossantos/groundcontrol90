@@ -2,23 +2,41 @@ package com.ecommerce.util;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
 
+    @Value("${jwt.secret}")
+    private String secret;
+
     @Value("${jwt.expiration:86400000}") // 24 horas en milisegundos
     private int expiration;
 
-    // Generar clave segura automáticamente (512 bits para HS512)
+    private SecretKey signingKey;
+
+    @PostConstruct
+    void init() {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException(
+                    "jwt.secret no está configurado. Definí la variable de entorno JWT_SECRET.");
+        }
+        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (keyBytes.length < 64) {
+            throw new IllegalStateException(
+                    "jwt.secret debe tener al menos 64 bytes para HS512; tiene " + keyBytes.length + ".");
+        }
+        this.signingKey = Keys.hmacShaKeyFor(keyBytes);
+    }
+
     private SecretKey getSigningKey() {
-        // Para desarrollo: clave fija segura
-        String secretKey = "mySecretKeyForJWTDevelopment123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
-        return Keys.hmacShaKeyFor(secretKey.getBytes());
+        return signingKey;
     }
 
     public String generateToken(String email, Long userId) {
@@ -40,7 +58,7 @@ public class JwtUtil {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-        
+
         return claims.getSubject();
     }
 
@@ -50,16 +68,16 @@ public class JwtUtil {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-        
+
         return claims.get("userId", Long.class);
     }
 
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token);
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
@@ -72,7 +90,7 @@ public class JwtUtil {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-        
+
         return claims.getExpiration();
     }
 

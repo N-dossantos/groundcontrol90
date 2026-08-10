@@ -6,7 +6,6 @@ import com.ecommerce.entity.Producto;
 import com.ecommerce.entity.Usuario;
 import com.ecommerce.exception.ProductoNotFoundException;
 import com.ecommerce.service.ProductoService;
-import com.ecommerce.util.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,14 +33,12 @@ class ProductoControllerTest {
 
     @Mock
     private ProductoService productoService;
-    
-    @Mock
-    private JwtUtil jwtUtil;
 
     @InjectMocks
     private ProductoController productoController;
 
     private Producto producto;
+    private Usuario usuario;
 
     @BeforeEach
     void setUp() {
@@ -50,7 +47,7 @@ class ProductoControllerTest {
                 .nombre("Electrónicos")
                 .build();
 
-        Usuario usuario = Usuario.builder()
+        usuario = Usuario.builder()
                 .id(1L)
                 .nombre("Juan")
                 .build();
@@ -116,14 +113,12 @@ class ProductoControllerTest {
     @DisplayName("Debería crear un nuevo producto")
     void testCrearProducto() {
         // Arrange
-        String authHeader = "Bearer test-token";
-        Long userId = 1L;
-        
-        when(jwtUtil.getUserIdFromToken("test-token")).thenReturn(userId);
+        Long userId = usuario.getId();
+
         when(productoService.crearProducto(any(Producto.class), eq(userId))).thenReturn(producto);
 
         // Act
-        ResponseEntity<ProductoDTO> respuesta = productoController.crearProducto(producto, authHeader);
+        ResponseEntity<ProductoDTO> respuesta = productoController.crearProducto(producto, usuario);
 
         // Assert
         assertEquals(HttpStatus.CREATED, respuesta.getStatusCode());

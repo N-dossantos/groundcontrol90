@@ -1,6 +1,7 @@
 package com.ecommerce.config;
 
 import com.ecommerce.repository.UsuarioRepository;
+import com.ecommerce.security.AuthRateLimitFilter;
 import com.ecommerce.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +11,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -19,14 +21,22 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
-    
+
     @Autowired
     private UsuarioRepository usuarioRepository;
-    
+
+    @Autowired
+    private CorsConfigurationSource corsConfigurationSource;
+
+    @Autowired
+    private AuthRateLimitFilter authRateLimitFilter;
+
     // =============================================
     // USER DETAILS SERVICE
     // =============================================
@@ -70,6 +80,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .csrf(csrf -> csrf.disable())  // Desactivar CSRF para APIs REST
             .authorizeHttpRequests(auth -> auth
                 // Endpoints públicos (sin autenticación)
@@ -94,6 +105,10 @@ public class SecurityConfig {
             .sessionManagement(session -> 
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
+            // El rate limiter va antes del filtro JWT (ambos anclados en el mismo punto:
+            // el orden de inserción se respeta porque List.sort es estable), y después
+            // del CorsFilter, para que la respuesta 429 llegue al navegador con headers CORS.
+            .addFilterBefore(authRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
             .authenticationProvider(authenticationProvider());
         

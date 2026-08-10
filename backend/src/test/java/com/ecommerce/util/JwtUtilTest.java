@@ -4,9 +4,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.lang.reflect.Field;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -15,151 +15,129 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("Tests Unitarios - JwtUtil")
 class JwtUtilTest {
 
+    private static final String VALID_SECRET =
+            "test-secret-key-para-hs512-con-longitud-suficiente-de-al-menos-64-caracteres-xxxxxxxxxxxx";
+
     private JwtUtil jwtUtil;
 
     private String email;
     private Long userId;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         email = "test@example.com";
         userId = 1L;
-        // Crear instancia real de JwtUtil con tiempo de expiración largo para tests
         jwtUtil = new JwtUtil();
-        // Usar reflexión para establecer un tiempo de expiración más largo (1 hora)
-        try {
-            java.lang.reflect.Field expirationField = JwtUtil.class.getDeclaredField("expiration");
-            expirationField.setAccessible(true);
-            expirationField.set(jwtUtil, 3600000); // 1 hora en milisegundos
-        } catch (Exception e) {
-            // Si falla, usar el valor por defecto
-        }
+        setField("secret", VALID_SECRET);
+        setField("expiration", 3600000); // 1 hora, para que los tests no dependan del reloj
+        jwtUtil.init();
+    }
+
+    private void setField(String name, Object value) throws Exception {
+        Field field = JwtUtil.class.getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(jwtUtil, value);
+    }
+
+    @Test
+    @DisplayName("init() debería fallar si jwt.secret no está configurado")
+    void testInit_ThrowsWhenSecretMissing() throws Exception {
+        JwtUtil sinSecret = new JwtUtil();
+        setFieldOn(sinSecret, "secret", null);
+
+        assertThrows(IllegalStateException.class, sinSecret::init);
+    }
+
+    @Test
+    @DisplayName("init() debería fallar si jwt.secret es demasiado corto para HS512")
+    void testInit_ThrowsWhenSecretTooShort() throws Exception {
+        JwtUtil secretCorto = new JwtUtil();
+        setFieldOn(secretCorto, "secret", "1234567890123456789012345678901234567890"); // 40 bytes (320 bits)
+
+        assertThrows(IllegalStateException.class, secretCorto::init);
+    }
+
+    private void setFieldOn(JwtUtil target, String name, Object value) throws Exception {
+        Field field = JwtUtil.class.getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(target, value);
     }
 
     @Test
     @DisplayName("Debería generar un token JWT válido")
     void testGenerateToken() {
-        // Act
         String nuevoToken = jwtUtil.generateToken(email, userId);
 
-        // Assert
         assertNotNull(nuevoToken);
         assertFalse(nuevoToken.isEmpty());
-        assertTrue(nuevoToken.split("\\.").length == 3); // JWT tiene 3 partes separadas por puntos
+        assertEquals(3, nuevoToken.split("\\.").length);
     }
 
     @Test
     @DisplayName("Debería extraer el email del token")
     void testGetEmailFromToken() {
-        // Arrange - Generar token fresco
         String tokenFresco = jwtUtil.generateToken(email, userId);
-        
-        // Act
-        String emailExtraido = jwtUtil.getEmailFromToken(tokenFresco);
-
-        // Assert
-        assertNotNull(emailExtraido);
-        assertEquals(email, emailExtraido);
+        assertEquals(email, jwtUtil.getEmailFromToken(tokenFresco));
     }
 
     @Test
     @DisplayName("Debería extraer el userId del token")
     void testGetUserIdFromToken() {
-        // Arrange - Generar token fresco
         String tokenFresco = jwtUtil.generateToken(email, userId);
-        
-        // Act
-        Long userIdExtraido = jwtUtil.getUserIdFromToken(tokenFresco);
-
-        // Assert
-        assertNotNull(userIdExtraido);
-        assertEquals(userId, userIdExtraido);
+        assertEquals(userId, jwtUtil.getUserIdFromToken(tokenFresco));
     }
 
     @Test
     @DisplayName("Debería validar un token válido")
     void testValidateToken_TokenValido() {
-        // Arrange - Generar token fresco
         String tokenFresco = jwtUtil.generateToken(email, userId);
-        
-        // Act
-        boolean esValido = jwtUtil.validateToken(tokenFresco);
-
-        // Assert
-        assertTrue(esValido);
+        assertTrue(jwtUtil.validateToken(tokenFresco));
     }
 
     @Test
     @DisplayName("Debería retornar false para un token inválido")
     void testValidateToken_TokenInvalido() {
-        // Arrange
-        String tokenInvalido = "token.invalido.malformado";
-
-        // Act
-        boolean esValido = jwtUtil.validateToken(tokenInvalido);
-
-        // Assert
-        assertFalse(esValido);
+        assertFalse(jwtUtil.validateToken("token.invalido.malformado"));
     }
 
     @Test
     @DisplayName("Debería retornar false para un token nulo")
     void testValidateToken_TokenNulo() {
-        // Act
-        boolean esValido = jwtUtil.validateToken(null);
-
-        // Assert
-        assertFalse(esValido);
+        assertFalse(jwtUtil.validateToken(null));
     }
 
     @Test
     @DisplayName("Debería obtener la fecha de expiración del token")
     void testGetExpirationDateFromToken() {
-        // Arrange - Generar token fresco
         String tokenFresco = jwtUtil.generateToken(email, userId);
-        
-        // Act
         Date fechaExpiracion = jwtUtil.getExpirationDateFromToken(tokenFresco);
 
-        // Assert
         assertNotNull(fechaExpiracion);
-        assertTrue(fechaExpiracion.after(new Date())); // Debe estar en el futuro
+        assertTrue(fechaExpiracion.after(new Date()));
     }
 
     @Test
     @DisplayName("Debería verificar si un token está expirado")
     void testIsTokenExpired_TokenNoExpirado() {
-        // Arrange - Generar token fresco
         String tokenFresco = jwtUtil.generateToken(email, userId);
-        
-        // Act
-        boolean estaExpirado = jwtUtil.isTokenExpired(tokenFresco);
-
-        // Assert
-        assertFalse(estaExpirado); // El token recién generado no debería estar expirado
+        assertFalse(jwtUtil.isTokenExpired(tokenFresco));
     }
 
     @Test
     @DisplayName("Debería generar tokens diferentes para diferentes emails")
     void testGenerateToken_DiferentesEmails() {
-        // Act
         String token1 = jwtUtil.generateToken("email1@test.com", 1L);
         String token2 = jwtUtil.generateToken("email2@test.com", 2L);
 
-        // Assert
         assertNotEquals(token1, token2);
-        assertNotNull(token1);
-        assertNotNull(token2);
     }
 
     @Test
     @DisplayName("Debería generar tokens diferentes para el mismo email pero diferentes usuarios")
     void testGenerateToken_DiferentesUsuarios() {
-        // Act
         String token1 = jwtUtil.generateToken(email, 1L);
         String token2 = jwtUtil.generateToken(email, 2L);
 
-        // Assert
         assertNotEquals(token1, token2);
     }
 }
