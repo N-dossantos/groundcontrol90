@@ -39,6 +39,53 @@ const request = async (endpoint, options = {}) => {
   }
 }
 
+// Mapea un producto del backend al formato del frontend.
+// El stock ya no es un número del producto: vive en cada variante (talle).
+const mapProduct = (product) => ({
+  id: product.id,
+  name: product.name,
+  description: product.description,
+  price: product.price,
+  club: product.club,
+  liga: product.liga,
+  temporada: product.temporada,
+  tipo: product.tipo,
+  variantes: (product.variantes || []).map(v => ({
+    id: v.id,
+    talle: v.talle,
+    stock: v.stock,
+    sku: v.sku,
+  })),
+  stockTotal: product.stockTotal ?? 0,
+  images: product.images || [],
+  categoryId: product.categoriaId, // Backend usa 'categoriaId'
+  categoryName: product.categoriaNombre,
+  ownerUserId: product.ownerUserId,
+  ownerUserName: product.ownerUserNombre,
+  createdAt: product.createdAt,
+  updatedAt: product.updatedAt,
+})
+
+// Arma el body de POST/PUT /api/productos: producto + su lista completa de variantes
+const buildProductPayload = (productData) => ({
+  producto: {
+    name: productData.name,
+    description: productData.description,
+    price: Number(productData.price),
+    club: productData.club,
+    liga: productData.liga,
+    temporada: productData.temporada,
+    tipo: productData.tipo,
+    images: productData.images || [],
+    categoriaId: productData.categoryId ? Number(productData.categoryId) : null,
+  },
+  variantes: (productData.variantes || []).map(v => ({
+    talle: v.talle,
+    stock: Number(v.stock),
+    sku: v.sku,
+  })),
+})
+
 export const api = {
   // Auth endpoints - AUTENTICACIÓN REAL con Spring Boot + JWT
   async login(emailOrUsername, password) {
@@ -128,55 +175,39 @@ export const api = {
     else if (filters.search) {
       products = await request(`/productos/buscar?nombre=${encodeURIComponent(filters.search)}`)
     }
-    // Si se solicita solo productos con stock
-    else if (filters.availableOnly) {
-      products = await request('/productos/stock?disponible=true')
-    }
     // Obtener todos los productos
     else {
       products = await request('/productos')
     }
-    
+
     // Mapear campos del backend al formato del frontend
-    const mappedProducts = products.map(product => ({
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      stock: product.stock,
-      images: product.images || [],
-      categoryId: product.categoriaId, // Backend usa 'categoriaId'
-      categoryName: product.categoriaNombre,
-      ownerUserId: product.ownerUserId,
-      ownerUserName: product.ownerUserNombre,
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt
-    }))
-    
+    const mappedProducts = products.map(mapProduct)
+
     // Ordenar alfabéticamente
     mappedProducts.sort((a, b) => a.name.localeCompare(b.name))
     return mappedProducts
   },
-  
+
+  /**
+   * Filtrar el catálogo por club, liga, tipo, talle y rango de precio
+   */
+  async getProductsFiltered(filtro = {}) {
+    const params = new URLSearchParams()
+    if (filtro.club) params.set('club', filtro.club)
+    if (filtro.liga) params.set('liga', filtro.liga)
+    if (filtro.tipo) params.set('tipo', filtro.tipo)
+    if (filtro.talle) params.set('talle', filtro.talle)
+    if (filtro.precioMin) params.set('precioMin', filtro.precioMin)
+    if (filtro.precioMax) params.set('precioMax', filtro.precioMax)
+
+    const products = await request(`/productos/filtrar?${params.toString()}`)
+    return products.map(mapProduct)
+  },
+
   async getProduct(id) {
     try {
       const product = await request(`/productos/${id}`)
-      
-      // Mapear campos del backend al formato del frontend
-      return {
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        stock: product.stock,
-        images: product.images || [],
-        categoryId: product.categoriaId,
-        categoryName: product.categoriaNombre,
-        ownerUserId: product.ownerUserId,
-        ownerUserName: product.ownerUserNombre,
-        createdAt: product.createdAt,
-        updatedAt: product.updatedAt
-      }
+      return mapProduct(product)
     } catch (error) {
       if (error.message.includes('404')) {
         throw new Error(ERROR_MESSAGES.PRODUCT_NOT_FOUND)
@@ -186,70 +217,22 @@ export const api = {
   },
   
   async createProduct(productData) {
-    const newProduct = {
-      name: productData.name,
-      description: productData.description,
-      price: Number(productData.price),
-      stock: Number(productData.stock) || 0,
-      images: productData.images || [],
-      categoriaId: Number(productData.categoryId), // Backend espera 'categoriaId'
-      ownerUserId: productData.ownerUserId || null,
-    }
-    
     const created = await request('/productos', {
       method: 'POST',
-      body: JSON.stringify(newProduct),
+      body: JSON.stringify(buildProductPayload(productData)),
     })
-    
-    // Mapear respuesta al formato del frontend
-    return {
-      id: created.id,
-      name: created.name,
-      description: created.description,
-      price: created.price,
-      stock: created.stock,
-      images: created.images || [],
-      categoryId: created.categoriaId,
-      categoryName: created.categoriaNombre,
-      ownerUserId: created.ownerUserId,
-      ownerUserName: created.ownerUserNombre,
-      createdAt: created.createdAt,
-      updatedAt: created.updatedAt
-    }
+
+    return mapProduct(created)
   },
-  
+
   async updateProduct(id, productData) {
     try {
-      const updatedProduct = {
-        name: productData.name,
-        description: productData.description,
-        price: Number(productData.price),
-        stock: Number(productData.stock),
-        images: productData.images || [],
-        categoriaId: Number(productData.categoryId), // Backend espera 'categoriaId'
-        ownerUserId: productData.ownerUserId || null,
-      }
-      
       const updated = await request(`/productos/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(updatedProduct),
+        body: JSON.stringify(buildProductPayload(productData)),
       })
-      
-      // Mapear respuesta al formato del frontend
-      return {
-        id: updated.id,
-        name: updated.name,
-        description: updated.description,
-        price: updated.price,
-        stock: updated.stock,
-        images: updated.images || [],
-        categoryId: updated.categoriaId,
-        categoryName: updated.categoriaNombre,
-        ownerUserId: updated.ownerUserId,
-        ownerUserName: updated.ownerUserNombre,
-        createdAt: updated.createdAt,
-        updatedAt: updated.updatedAt
-      }
+
+      return mapProduct(updated)
     } catch (error) {
       if (error.message.includes('404')) {
         throw new Error(ERROR_MESSAGES.PRODUCT_NOT_FOUND)
@@ -283,45 +266,23 @@ export const api = {
     }))
   },
   
-  // Update product stock (for checkout)
-  async updateProductStock(productId, newStock) {
-    try {
-      const product = await request(`/productos/${productId}`)
-      
-      const updated = await request(`/productos/${productId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ 
-          name: product.name,
-          description: product.description,
-          price: product.price,
-          stock: newStock,
-          images: product.images || [],
-          categoriaId: product.categoriaId,
-          ownerUserId: product.ownerUserId
-        }),
-      })
-      
-      // Mapear respuesta al formato del frontend
-      return {
-        id: updated.id,
-        name: updated.name,
-        description: updated.description,
-        price: updated.price,
-        stock: updated.stock,
-        images: updated.images || [],
-        categoryId: updated.categoriaId,
-        categoryName: updated.categoriaNombre,
-        ownerUserId: updated.ownerUserId,
-        ownerUserName: updated.ownerUserNombre,
-        createdAt: updated.createdAt,
-        updatedAt: updated.updatedAt
-      }
-    } catch (error) {
-      if (error.message.includes('404')) {
-        throw new Error(ERROR_MESSAGES.PRODUCT_NOT_FOUND)
-      }
-      throw error
-    }
+  // ===== DIRECCIONES =====
+
+  async getDirecciones() {
+    return request('/direcciones')
+  },
+
+  async createDireccion(data) {
+    return request('/direcciones', { method: 'POST', body: JSON.stringify(data) })
+  },
+
+  async updateDireccion(id, data) {
+    return request(`/direcciones/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+  },
+
+  async deleteDireccion(id) {
+    await request(`/direcciones/${id}`, { method: 'DELETE' })
+    return true
   },
 
   // ===== PEDIDOS/ÓRDENES =====
@@ -360,8 +321,8 @@ export const api = {
     try {
       const newOrder = {
         items: orderData.items.map(item => ({
-          productoId: item.productId || item.id,
-          cantidad: item.quantity || item.cantidad
+          productoVarianteId: item.productoVarianteId,
+          cantidad: item.cantidad
         })),
         direccionEnvio: orderData.shippingAddress || orderData.direccionEnvio || '',
         notas: orderData.notes || orderData.notas || ''
