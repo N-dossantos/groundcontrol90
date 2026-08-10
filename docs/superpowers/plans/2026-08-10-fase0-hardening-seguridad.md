@@ -33,7 +33,7 @@
 
 Hoy `JwtUtil.getSigningKey()` (líneas 18-22) devuelve una clave HS512 fija hardcodeada en el código y versionada en git. Pasa a leerse de `jwt.secret`, validarse una sola vez al arrancar, y cachearse.
 
-- [ ] **Step 1: Escribir el test que falla — `init()` debe rechazar un secret ausente o débil**
+- [x] **Step 1: Escribir el test que falla — `init()` debe rechazar un secret ausente o débil**
 
 En `backend/src/test/java/com/ecommerce/util/JwtUtilTest.java`, reemplazar el método `setUp()` y agregar los tests nuevos (dejar el resto de los tests existentes tal cual, ya que seguirán pasando):
 
@@ -184,12 +184,12 @@ class JwtUtilTest {
 }
 ```
 
-- [ ] **Step 2: Correr los tests y verificar que fallan**
+- [x] **Step 2: Correr los tests y verificar que fallan**
 
 Run: `cd backend && mvnd test -Dtest=JwtUtilTest`
 Expected: FALLA — `JwtUtil` todavía no tiene el campo `secret` ni el método `init()`.
 
-- [ ] **Step 3: Implementar `JwtUtil` leyendo el secret de configuración**
+- [x] **Step 3: Implementar `JwtUtil` leyendo el secret de configuración**
 
 Reemplazar el contenido completo de `backend/src/main/java/com/ecommerce/util/JwtUtil.java`:
 
@@ -295,7 +295,7 @@ public class JwtUtil {
 }
 ```
 
-- [ ] **Step 4: Agregar `jwt.secret` a la configuración de dev y prod**
+- [x] **Step 4: Agregar `jwt.secret` a la configuración de dev y prod**
 
 En `backend/src/main/resources/application-dev.properties`, agregar al final:
 
@@ -313,12 +313,12 @@ jwt.secret=${JWT_SECRET}
 jwt.expiration=${JWT_EXPIRATION:86400000}
 ```
 
-- [ ] **Step 5: Correr los tests y verificar que pasan**
+- [x] **Step 5: Correr los tests y verificar que pasan**
 
 Run: `cd backend && mvnd test -Dtest=JwtUtilTest`
 Expected: PASS — los 13 tests (11 existentes + 2 nuevos) en verde.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/main/java/com/ecommerce/util/JwtUtil.java \
@@ -343,7 +343,7 @@ git commit -m "security: leer JWT signing key de variable de entorno con fail-fa
 
 Este cambio es de configuración, no de lógica de negocio — no hay test unitario razonable; la verificación es arrancar el proceso con y sin las variables seteadas.
 
-- [ ] **Step 1: Quitar usuario/password hardcodeados de `application-prod.properties`**
+- [x] **Step 1: Quitar usuario/password hardcodeados de `application-prod.properties`**
 
 En `backend/src/main/resources/application-prod.properties`, reemplazar las líneas 13-16:
 
@@ -365,7 +365,7 @@ spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 
 y reemplazar el bloque de CORS (líneas 35-39, que ya no se usa — ver Task 3) por nada; se elimina en el Task 3.
 
-- [ ] **Step 2: Forzar que Docker Compose falle si faltan las variables sensibles en prod**
+- [x] **Step 2: Forzar que Docker Compose falle si faltan las variables sensibles en prod**
 
 En `docker-compose.prod.yml`, reemplazar los defaults inseguros por la sintaxis `${VAR:?mensaje}` de Compose (falla el `up` si la variable no está seteada), tanto en `mysql-db` como en `backend`:
 
@@ -400,7 +400,7 @@ En `docker-compose.prod.yml`, reemplazar los defaults inseguros por la sintaxis 
 
 (Nota: `SPRING_PROFILES_ACTIVE` pasa de `docker` a `prod` — el perfil `docker` no existe como archivo `application-docker.properties`, es un perfil fantasma que hoy cae en los defaults de `application.properties`; se corrige para que use el perfil `prod` real.)
 
-- [ ] **Step 3: Documentar las variables requeridas**
+- [x] **Step 3: Documentar las variables requeridas**
 
 Crear `.env.example` en la raíz del repo:
 
@@ -426,7 +426,7 @@ BACKEND_PORT=8081
 FRONTEND_PORT=80
 ```
 
-- [ ] **Step 4: Verificar el fail-fast manualmente**
+- [x] **Step 4: Verificar el fail-fast manualmente**
 
 Run: `docker compose -f docker-compose.prod.yml config`
 Expected: error indicando qué variable falta (probar sin `.env` presente). Luego, con un `.env` completo basado en `.env.example`:
@@ -434,7 +434,7 @@ Expected: error indicando qué variable falta (probar sin `.env` presente). Lueg
 Run: `docker compose -f docker-compose.prod.yml config`
 Expected: el YAML resuelto se imprime sin errores.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/src/main/resources/application-prod.properties docker-compose.prod.yml .env.example
@@ -464,7 +464,7 @@ git commit -m "security: eliminar credenciales de MySQL hardcodeadas, requerir v
 
 Hoy cada controller repite `@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})` (6 ocurrencias) y las propiedades `spring.web.cors.*` en `application-dev.properties`/`application-prod.properties` no las lee ningún código (Spring Boot no las bindea automáticamente para MVC) — son configuración muerta. Se reemplaza todo por un único `CorsConfigurationSource` leído de `cors.allowed-origins` y enchufado en `SecurityConfig`.
 
-- [ ] **Step 1: Escribir el test que falla**
+- [x] **Step 1: Escribir el test que falla**
 
 Crear `backend/src/test/java/com/ecommerce/config/CorsConfigTest.java`:
 
@@ -510,12 +510,12 @@ class CorsConfigTest {
 }
 ```
 
-- [ ] **Step 2: Correr el test y verificar que falla**
+- [x] **Step 2: Correr el test y verificar que falla**
 
 Run: `cd backend && mvnd test -Dtest=CorsConfigTest`
 Expected: FALLA — `CorsConfig` no existe todavía.
 
-- [ ] **Step 3: Implementar `CorsConfig`**
+- [x] **Step 3: Implementar `CorsConfig`**
 
 Crear `backend/src/main/java/com/ecommerce/config/CorsConfig.java`:
 
@@ -558,12 +558,12 @@ public class CorsConfig {
 }
 ```
 
-- [ ] **Step 4: Correr el test y verificar que pasa**
+- [x] **Step 4: Correr el test y verificar que pasa**
 
 Run: `cd backend && mvnd test -Dtest=CorsConfigTest`
 Expected: PASS
 
-- [ ] **Step 5: Enchufar el bean en `SecurityConfig` y quitar `@CrossOrigin` de los 6 controllers**
+- [x] **Step 5: Enchufar el bean en `SecurityConfig` y quitar `@CrossOrigin` de los 6 controllers**
 
 En `backend/src/main/java/com/ecommerce/config/SecurityConfig.java`, agregar el import `org.springframework.web.cors.CorsConfigurationSource`, inyectar el bean y llamar a `.cors(...)` antes de `.csrf(...)` dentro de `securityFilterChain`:
 
@@ -588,7 +588,7 @@ En cada uno de estos 6 archivos, borrar la línea `@CrossOrigin(origins = {"http
 - `ProductoController.java:20`
 - `VentasController.java:24`
 
-- [ ] **Step 6: Reemplazar las propiedades CORS muertas por `cors.allowed-origins`**
+- [x] **Step 6: Reemplazar las propiedades CORS muertas por `cors.allowed-origins`**
 
 En `backend/src/main/resources/application-dev.properties`, reemplazar el bloque (líneas 24-28):
 
@@ -614,12 +614,12 @@ En `backend/src/main/resources/application-prod.properties`, reemplazar el bloqu
 cors.allowed-origins=${CORS_ALLOWED_ORIGINS}
 ```
 
-- [ ] **Step 7: Correr toda la suite y verificar que compila y pasa**
+- [x] **Step 7: Correr toda la suite y verificar que compila y pasa**
 
 Run: `cd backend && mvnd test`
 Expected: PASS (todos los tests existentes siguen en verde, más el nuevo `CorsConfigTest`).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add backend/src/main/java/com/ecommerce/config/CorsConfig.java \
@@ -650,7 +650,7 @@ git commit -m "security: centralizar configuración CORS en un único bean por v
 
 Hallazgo: en toda la base de código no existe ningún `@EnableMethodSecurity` (se verificó con grep). Esto significa que el `@PreAuthorize("hasRole('ADMIN')")` ya presente en `AdminController` **no se está aplicando** — hoy `/api/admin/**` solo queda protegido porque `SecurityConfig` también lo lista como `.hasRole("ADMIN")` a nivel de URL. Si mañana alguien protege un endpoint nuevo solo con `@PreAuthorize`, quedaría completamente abierto. Se habilita method security y se prueba con un test de integración real (MockMvc + contexto Spring), algo que hoy no existe en el proyecto — los tests actuales son unitarios puros con Mockito y nunca levantan el contexto de Spring.
 
-- [ ] **Step 1: Crear el perfil de test**
+- [x] **Step 1: Crear el perfil de test**
 
 Crear `backend/src/test/resources/application-test.properties`:
 
@@ -668,7 +668,7 @@ jwt.expiration=3600000
 cors.allowed-origins=http://localhost:5173
 ```
 
-- [ ] **Step 2: Escribir el test de integración que falla**
+- [x] **Step 2: Escribir el test de integración que falla**
 
 Crear `backend/src/test/java/com/ecommerce/controller/AdminControllerSecurityTest.java`:
 
@@ -746,12 +746,12 @@ class AdminControllerSecurityTest {
 }
 ```
 
-- [ ] **Step 3: Correr el test — debería pasar igual (protección vía URL matcher), confirmando el punto de partida**
+- [x] **Step 3: Correr el test — debería pasar igual (protección vía URL matcher), confirmando el punto de partida**
 
 Run: `cd backend && mvnd test -Dtest=AdminControllerSecurityTest`
 Expected: PASS — porque `SecurityConfig` ya protege `/api/admin/**` a nivel de URL, independientemente de si `@PreAuthorize` funciona o no. Este test sirve como red de seguridad para el resto del plan, no prueba todavía que method security esté activo.
 
-- [ ] **Step 4: Habilitar method security**
+- [x] **Step 4: Habilitar method security**
 
 En `backend/src/main/java/com/ecommerce/config/SecurityConfig.java`, agregar el import `org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity` y la anotación en la clase:
 
@@ -762,12 +762,12 @@ En `backend/src/main/java/com/ecommerce/config/SecurityConfig.java`, agregar el 
 public class SecurityConfig {
 ```
 
-- [ ] **Step 5: Correr el test de nuevo y verificar que sigue en verde**
+- [x] **Step 5: Correr el test de nuevo y verificar que sigue en verde**
 
 Run: `cd backend && mvnd test -Dtest=AdminControllerSecurityTest`
 Expected: PASS (ahora la protección de `/api/admin/**` está doblemente garantizada: por URL matcher y por `@PreAuthorize`).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/main/java/com/ecommerce/config/SecurityConfig.java \
@@ -790,7 +790,7 @@ git commit -m "security: habilitar @EnableMethodSecurity y agregar primer test d
 
 Hoy `PedidoController` parsea el header `Authorization` a mano en cada método (`getUserIdFromAuth`, `isAdmin`, líneas 246-270) en vez de delegar en Spring Security. Como ninguna de sus rutas (`/api/pedidos/**`) está listada explícitamente en `SecurityConfig` más allá del catch-all `.anyRequest().authenticated()`, la única barrera real para los endpoints de admin (`GET /api/pedidos`, `PUT /api/pedidos/{id}/estado`, `GET /api/pedidos/estado/{estado}`, `GET /api/pedidos/admin/**`) es ese método `isAdmin()` casero — sin defensa en profundidad. Se reemplaza por `@PreAuthorize`, que ahora sí es efectivo gracias al Task 4.
 
-- [ ] **Step 1: Escribir el test de integración que falla**
+- [x] **Step 1: Escribir el test de integración que falla**
 
 Crear `backend/src/test/java/com/ecommerce/controller/PedidoControllerSecurityTest.java`:
 
@@ -876,12 +876,12 @@ class PedidoControllerSecurityTest {
 }
 ```
 
-- [ ] **Step 2: Correr el test y verificar que falla**
+- [x] **Step 2: Correr el test y verificar que falla**
 
 Run: `cd backend && mvnd test -Dtest=PedidoControllerSecurityTest`
 Expected: FALLA en `testObtenerTodosLosPedidos_UsuarioComun_Forbidden` — hoy `isAdmin()` sí lo bloquea correctamente (devuelve 403 vía `ForbiddenException`), así que en realidad este caso puede pasar; lo que confirma la falla es que **no hay ninguna garantía a nivel de framework** — para dejarlo en rojo de verdad antes de refactorizar, comentar temporalmente el cuerpo de `isAdmin()` en `PedidoController` para que devuelva siempre `true` y confirmar que el test de "usuario común forbidden" falla. Revertir ese comentario antes de seguir al Step 3.
 
-- [ ] **Step 3: Refactorizar `PedidoController`**
+- [x] **Step 3: Refactorizar `PedidoController`**
 
 En `backend/src/main/java/com/ecommerce/controller/PedidoController.java`:
 
@@ -1004,17 +1004,17 @@ En `backend/src/main/java/com/ecommerce/controller/PedidoController.java`:
 
 El resto de la clase (imports de entidades/DTOs/excepciones, campos `pedidoService`/`usuarioService`) queda igual salvo lo indicado.
 
-- [ ] **Step 4: Correr el test y verificar que pasa**
+- [x] **Step 4: Correr el test y verificar que pasa**
 
 Run: `cd backend && mvnd test -Dtest=PedidoControllerSecurityTest`
 Expected: PASS
 
-- [ ] **Step 5: Correr toda la suite de backend**
+- [x] **Step 5: Correr toda la suite de backend**
 
 Run: `cd backend && mvnd test`
 Expected: PASS — incluyendo los tests unitarios preexistentes que llamaban a los métodos del controller directamente (revisar `backend/src/test/java/com/ecommerce/controller/` si alguno instanciaba `PedidoController` a mano con los parámetros viejos; a la fecha de este plan no existe `PedidoControllerTest.java` en el repo, solo `PedidoServiceTest.java`, que no se ve afectado).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/main/java/com/ecommerce/controller/PedidoController.java \
@@ -1037,16 +1037,16 @@ git commit -m "security: refactorizar PedidoController a @PreAuthorize y @Authen
 
 Mismo patrón repetido de parseo manual de `Authorization` en `ProductoController` (líneas 150-161) y `VentasController` (líneas al final del archivo). `SecurityConfig` ya exige `.authenticated()` a nivel de URL para `POST/PUT/DELETE /api/productos/**`, así que acá el cambio es de limpieza/consistencia (elimina lógica de parseo de JWT duplicada en 3 controllers), no cierra un agujero de autorización como en el Task 5 — pero reduce superficie de bugs futuros.
 
-- [ ] **Step 1: Revisar el test unitario existente que se ve afectado**
+- [x] **Step 1: Revisar el test unitario existente que se ve afectado**
 
 Leer `backend/src/test/java/com/ecommerce/controller/ProductoControllerTest.java` para confirmar cómo invoca hoy `crearProducto` (probablemente pasando un `authHeader` de String armado a mano). Ajustarlo para que en cambio pase un `Usuario` mockeado como segundo argumento, seguiendo el mismo patrón `@Mock`/`@InjectMocks` que ya usa el resto de la clase.
 
-- [ ] **Step 2: Correr el test existente y verificar que falla (por firma incompatible tras el Step 3)**
+- [x] **Step 2: Correr el test existente y verificar que falla (por firma incompatible tras el Step 3)**
 
 Run: `cd backend && mvnd test -Dtest=ProductoControllerTest`
 Expected: en este punto todavía compila con la firma vieja — este step es informativo, el rojo real llega recién al cambiar la firma del controller en el Step 3, momento en el que el módulo no compila hasta ajustar el test.
 
-- [ ] **Step 3: Refactorizar `ProductoController.crearProducto`**
+- [x] **Step 3: Refactorizar `ProductoController.crearProducto`**
 
 En `backend/src/main/java/com/ecommerce/controller/ProductoController.java`, agregar imports `org.springframework.security.core.annotation.AuthenticationPrincipal` y `com.ecommerce.entity.Usuario`; quitar el campo `jwtUtil` (líneas 26-27) y el método `getUserIdFromAuth` (líneas 149-161); reemplazar:
 
@@ -1059,20 +1059,20 @@ En `backend/src/main/java/com/ecommerce/controller/ProductoController.java`, agr
     }
 ```
 
-- [ ] **Step 4: Refactorizar `VentasController`**
+- [x] **Step 4: Refactorizar `VentasController`**
 
 En `backend/src/main/java/com/ecommerce/controller/VentasController.java`, mismo patrón: quitar `jwtUtil` y `getUserIdFromAuth`, agregar `@AuthenticationPrincipal Usuario usuario` a los cuatro métodos (`obtenerMisVentas`, `obtenerMisVentasPorEstado`, `obtenerVentaPorId`, `actualizarEstadoVenta`, `obtenerEstadisticasVentas`) y usar `usuario.getId()` en vez de `vendedorId` obtenido del header.
 
-- [ ] **Step 5: Ajustar `ProductoControllerTest.java`**
+- [x] **Step 5: Ajustar `ProductoControllerTest.java`**
 
 Actualizar la construcción del `Usuario` mock/real que se le pasa a `crearProducto` en el test, reemplazando el mecanismo de header por el objeto `Usuario` directamente (mismo patrón `Usuario.builder()...build()` que ya usan `AuthControllerTest`/`AdminControllerSecurityTest`).
 
-- [ ] **Step 6: Correr toda la suite de backend**
+- [x] **Step 6: Correr toda la suite de backend**
 
 Run: `cd backend && mvnd test`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add backend/src/main/java/com/ecommerce/controller/ProductoController.java \
@@ -1102,7 +1102,7 @@ diff /tmp/schema-real.sql backend/src/main/resources/db/migration/V1__baseline_s
 
 Ajustá el `V1__baseline_schema.sql` si hay diferencias antes de continuar.
 
-- [ ] **Step 1: Agregar la dependencia de Flyway**
+- [x] **Step 1: Agregar la dependencia de Flyway**
 
 En `backend/pom.xml`, agregar dentro de `<dependencies>` (junto a `mysql-connector-j`):
 
@@ -1119,7 +1119,7 @@ En `backend/pom.xml`, agregar dentro de `<dependencies>` (junto a `mysql-connect
 
 (Spring Boot 3.2 gestiona la versión de Flyway vía el BOM de `spring-boot-starter-parent`, no hace falta fijar `<version>`.)
 
-- [ ] **Step 2: Crear la migración baseline**
+- [x] **Step 2: Crear la migración baseline**
 
 Crear `backend/src/main/resources/db/migration/V1__baseline_schema.sql`:
 
@@ -1192,7 +1192,7 @@ CREATE TABLE detalle_pedidos (
 );
 ```
 
-- [ ] **Step 3: Pasar `ddl-auto` a `validate` en prod y dejar Flyway a cargo del esquema**
+- [x] **Step 3: Pasar `ddl-auto` a `validate` en prod y dejar Flyway a cargo del esquema**
 
 En `backend/src/main/resources/application-prod.properties`, reemplazar la línea `spring.jpa.hibernate.ddl-auto=update` por:
 
@@ -1203,7 +1203,7 @@ spring.flyway.enabled=true
 
 `application-dev.properties` y `application-test.properties` quedan sin cambios (siguen con H2 + `create-drop`, no necesitan Flyway para desarrollo local rápido).
 
-- [ ] **Step 4: Verificar contra una MySQL limpia**
+- [x] **Step 4: Verificar contra una MySQL limpia**
 
 Run:
 ```bash
@@ -1214,7 +1214,7 @@ cd backend && mvnd spring-boot:run -Dspring-boot.run.profiles=prod \
 ```
 Expected: el log muestra `Flyway ... Successfully applied 1 migration` y el contexto de Spring arranca sin el error `Schema-validation: missing table` ni `wrong column type`. Parar con Ctrl+C y `docker stop mysql-flyway-check`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/pom.xml \
@@ -1236,7 +1236,7 @@ git commit -m "infra: introducir Flyway con migración baseline, ddl-auto=valida
 **Interfaces:**
 - Produces: filtro `AuthRateLimitFilter` registrado antes de `JwtAuthenticationFilter` en la cadena de seguridad.
 
-- [ ] **Step 1: Agregar la dependencia de Bucket4j**
+- [x] **Step 1: Agregar la dependencia de Bucket4j**
 
 En `backend/pom.xml`:
 
@@ -1248,7 +1248,7 @@ En `backend/pom.xml`:
         </dependency>
 ```
 
-- [ ] **Step 2: Escribir el test que falla**
+- [x] **Step 2: Escribir el test que falla**
 
 Crear `backend/src/test/java/com/ecommerce/security/AuthRateLimitFilterTest.java`:
 
@@ -1296,12 +1296,12 @@ class AuthRateLimitFilterTest {
 }
 ```
 
-- [ ] **Step 3: Correr el test y verificar que falla**
+- [x] **Step 3: Correr el test y verificar que falla**
 
 Run: `cd backend && mvnd test -Dtest=AuthRateLimitFilterTest`
 Expected: FALLA — el sexto intento hoy devuelve 401 (credenciales inválidas), no 429.
 
-- [ ] **Step 4: Implementar el filtro**
+- [x] **Step 4: Implementar el filtro**
 
 Crear `backend/src/main/java/com/ecommerce/security/AuthRateLimitFilter.java`:
 
@@ -1353,7 +1353,7 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
 }
 ```
 
-- [ ] **Step 5: Registrar el filtro en `SecurityConfig`**
+- [x] **Step 5: Registrar el filtro en `SecurityConfig`**
 
 En `backend/src/main/java/com/ecommerce/config/SecurityConfig.java`, inyectar `AuthRateLimitFilter` y agregarlo a la cadena antes del filtro JWT:
 
@@ -1369,17 +1369,17 @@ y en `securityFilterChain`:
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
 ```
 
-- [ ] **Step 6: Correr el test y verificar que pasa**
+- [x] **Step 6: Correr el test y verificar que pasa**
 
 Run: `cd backend && mvnd test -Dtest=AuthRateLimitFilterTest`
 Expected: PASS
 
-- [ ] **Step 7: Correr toda la suite de backend**
+- [x] **Step 7: Correr toda la suite de backend**
 
 Run: `cd backend && mvnd test`
 Expected: PASS
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add backend/pom.xml \
@@ -1402,7 +1402,7 @@ git commit -m "security: agregar rate limiting a /api/auth/login y /api/auth/reg
 
 Hoy `docker-compose.yml` referencia `./backend/Dockerfile`, pero ese archivo no existe en el repo — solo funciona `docker-compose.prod.yml`, que baja una imagen ya publicada manualmente en Docker Hub por un integrante del equipo. Se crea el Dockerfile real para que el build local (`docker-compose up --build`) funcione y para dejar de depender de una cuenta personal de Docker Hub en la Fase 4.
 
-- [ ] **Step 1: Crear `backend/.dockerignore`**
+- [x] **Step 1: Crear `backend/.dockerignore`**
 
 ```
 target/
@@ -1410,7 +1410,7 @@ target/
 *.md
 ```
 
-- [ ] **Step 2: Crear `backend/Dockerfile` (multi-stage: build con Maven, runtime con JRE)**
+- [x] **Step 2: Crear `backend/Dockerfile` (multi-stage: build con Maven, runtime con JRE)**
 
 ```dockerfile
 FROM maven:3.9-eclipse-temurin-17 AS build
@@ -1429,7 +1429,7 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 
 (Se usa la imagen oficial `maven:3.9-eclipse-temurin-17` para el stage de build en vez de instalar Maven a mano — el `pom.xml` ya define el repositorio extra de Lombok, así que `dependency:go-offline` lo resuelve sin configuración adicional.)
 
-- [ ] **Step 3: Build local y smoke test**
+- [x] **Step 3: Build local y smoke test**
 
 Run:
 ```bash
@@ -1438,7 +1438,7 @@ docker run --rm -e SPRING_PROFILES_ACTIVE=dev -p 8081:8081 ecommerce-backend-loc
 ```
 Expected: el log muestra `Started EcommerceBackendApplication` y `curl http://localhost:8081/api/categorias` (en otra terminal) devuelve `[]` o la lista de categorías, con status 200.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add backend/Dockerfile backend/.dockerignore
@@ -1459,7 +1459,7 @@ git commit -m "infra: agregar Dockerfile multi-stage del backend"
 
 Mismo gap que el backend: `docker-compose.yml` referencia `./frontend/Dockerfile`, que no existe. El healthcheck ya definido en `docker-compose.yml` (`curl -f http://localhost/health`) da la pista de que se espera un endpoint `/health` servido por Nginx.
 
-- [ ] **Step 1: Crear `frontend/.dockerignore`**
+- [x] **Step 1: Crear `frontend/.dockerignore`**
 
 ```
 node_modules/
@@ -1467,7 +1467,7 @@ dist/
 *.md
 ```
 
-- [ ] **Step 2: Crear `frontend/nginx.conf`**
+- [x] **Step 2: Crear `frontend/nginx.conf`**
 
 ```nginx
 server {
@@ -1488,7 +1488,7 @@ server {
 }
 ```
 
-- [ ] **Step 3: Crear `frontend/Dockerfile` (multi-stage: build con Node, runtime con Nginx)**
+- [x] **Step 3: Crear `frontend/Dockerfile` (multi-stage: build con Node, runtime con Nginx)**
 
 ```dockerfile
 FROM node:20-alpine AS build
@@ -1504,7 +1504,7 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 ```
 
-- [ ] **Step 4: Build local y smoke test**
+- [x] **Step 4: Build local y smoke test**
 
 Run:
 ```bash
@@ -1513,7 +1513,7 @@ docker run --rm -p 8080:80 ecommerce-frontend-local
 ```
 Expected: `curl http://localhost:8080/health` devuelve `ok` con status 200, y `curl http://localhost:8080/` devuelve el HTML de la SPA.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/Dockerfile frontend/.dockerignore frontend/nginx.conf
@@ -1535,7 +1535,7 @@ git commit -m "infra: agregar Dockerfile multi-stage del frontend con Nginx"
 
 Se elige Caddy sobre Nginx+Certbot porque renueva certificados de Let's Encrypt automáticamente sin cronjobs ni configuración manual — menos piezas para que este equipo mantenga.
 
-- [ ] **Step 1: Crear `Caddyfile`**
+- [x] **Step 1: Crear `Caddyfile`**
 
 ```
 {$DOMAIN} {
@@ -1549,7 +1549,7 @@ Se elige Caddy sobre Nginx+Certbot porque renueva certificados de Let's Encrypt 
 }
 ```
 
-- [ ] **Step 2: Agregar el servicio `proxy` a `docker-compose.prod.yml` y dejar de publicar puertos directos**
+- [x] **Step 2: Agregar el servicio `proxy` a `docker-compose.prod.yml` y dejar de publicar puertos directos**
 
 Agregar el servicio (y quitar los `ports:` de `backend` y `frontend`, que pasan a comunicarse solo dentro de la red interna `ecommerce-network`):
 
@@ -1588,7 +1588,7 @@ volumes:
 
 Quitar el bloque `ports:` de los servicios `backend` y `frontend` en `docker-compose.prod.yml` (siguen accesibles entre contenedores por nombre de servicio dentro de `ecommerce-network`, ya no expuestos al host).
 
-- [ ] **Step 3: Documentar la variable `DOMAIN`**
+- [x] **Step 3: Documentar la variable `DOMAIN`**
 
 En `.env.example`, agregar:
 
@@ -1597,14 +1597,14 @@ En `.env.example`, agregar:
 DOMAIN=tu-dominio.com
 ```
 
-- [ ] **Step 4: Verificar la configuración (sin poder emitir un certificado real desde este entorno de desarrollo)**
+- [x] **Step 4: Verificar la configuración (sin poder emitir un certificado real desde este entorno de desarrollo)**
 
 Run: `docker compose -f docker-compose.prod.yml config`
 Expected: el YAML resuelve sin errores, con `proxy` presente y sin `ports:` en `backend`/`frontend`.
 
 Nota: la emisión real del certificado Let's Encrypt requiere un dominio con DNS apuntando al servidor de producción y los puertos 80/443 abiertos — no se puede verificar end-to-end desde esta sesión. Queda como paso de checklist en la Fase 4 (deploy y go-live).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Caddyfile docker-compose.prod.yml .env.example
