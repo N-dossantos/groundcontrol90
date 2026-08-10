@@ -22,6 +22,7 @@ public class VentaDTO {
     private Long detalleId;
     private Long productoId;
     private String productoNombre;
+    private String talle;
     private String productoImagen;
     private Integer cantidad;
     private BigDecimal precioUnitario;
@@ -45,6 +46,7 @@ public class VentaDTO {
         this.detalleId = detalle.getId();
         this.productoId = detalle.getProducto() != null ? detalle.getProducto().getId() : null;
         this.productoNombre = detalle.getProductoNombre();
+        this.talle = detalle.getTalle();
         this.productoImagen = detalle.getProductoImagen();
         this.cantidad = detalle.getCantidad();
         this.precioUnitario = detalle.getPrecioUnitario();
