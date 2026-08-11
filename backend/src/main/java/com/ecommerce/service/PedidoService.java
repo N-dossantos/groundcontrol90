@@ -202,6 +202,39 @@ public class PedidoService {
     }
     
     /**
+     * Cancelar un pedido porque la pasarela rechazó (o canceló) el pago, devolviendo
+     * el stock reservado en el checkout.
+     *
+     * No valida que el llamador sea dueño del pedido: lo dispara el webhook de la
+     * pasarela o el job de expiración, no el usuario.
+     */
+    public Pedido cancelarPedidoPorPagoRechazado(Long pedidoId) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new PedidoNotFoundException(pedidoId));
+
+        if (pedido.getEstado() != EstadoPedido.PENDIENTE) {
+            // El pedido ya salió de PENDIENTE por otra vía (cancelado por el usuario,
+            // o un webhook duplicado) — no se vuelve a tocar el stock.
+            return pedido;
+        }
+
+        for (DetallePedido detalle : pedido.getItems()) {
+            if (detalle.getEstadoItem() == EstadoPedido.PENDIENTE) {
+                ProductoVariante variante = detalle.getVariante();
+                if (variante != null) {
+                    variante.setStock(variante.getStock() + detalle.getCantidad());
+                    productoVarianteRepository.save(variante);
+                }
+                detalle.setEstadoItem(EstadoPedido.PAGO_RECHAZADO);
+            }
+        }
+
+        pedido.setEstado(EstadoPedido.PAGO_RECHAZADO);
+        pedido.setUpdatedAt(LocalDateTime.now());
+        return pedidoRepository.save(pedido);
+    }
+
+    /**
      * Eliminar un pedido (solo admin)
      */
     public boolean eliminarPedido(Long id) {

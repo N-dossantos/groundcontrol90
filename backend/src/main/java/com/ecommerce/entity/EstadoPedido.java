@@ -18,6 +18,8 @@ public enum EstadoPedido {
     CANCELADO_COMPRADOR,  // Cancelado por el comprador
     CANCELADO_VENDEDOR,   // Cancelado por el vendedor
     DEVOLUCION_SOLICITADA, // Cliente solicitó devolución
-    DEVUELTO            // Item devuelto
+    DEVUELTO,           // Item devuelto
+
+    PAGO_RECHAZADO      // El pago fue rechazado o cancelado por la pasarela
 }
 

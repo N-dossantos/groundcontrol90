@@ -289,5 +289,42 @@ class PedidoServiceTest {
         assertEquals(1, resultado.size());
         verify(pedidoRepository, times(1)).findByEstado(EstadoPedido.PENDIENTE);
     }
+
+    @Test
+    @DisplayName("Debería liberar el stock de la variante y marcar el pedido como PAGO_RECHAZADO")
+    void testCancelarPedidoPorPagoRechazado_LiberaStock() {
+        ProductoVariante variante = ProductoVariante.builder().id(20L).talle("M").stock(2).sku("SKU-M").build();
+        DetallePedido item = DetallePedido.builder().variante(variante).cantidad(3)
+                .estadoItem(EstadoPedido.PENDIENTE).build();
+        Pedido pedidoPendiente = Pedido.builder().id(50L).estado(EstadoPedido.PENDIENTE)
+                .items(List.of(item)).build();
+
+        when(pedidoRepository.findById(50L)).thenReturn(Optional.of(pedidoPendiente));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Pedido resultado = pedidoService.cancelarPedidoPorPagoRechazado(50L);
+
+        assertEquals(5, variante.getStock()); // 2 + 3 devueltos
+        assertEquals(EstadoPedido.PAGO_RECHAZADO, resultado.getEstado());
+        assertEquals(EstadoPedido.PAGO_RECHAZADO, item.getEstadoItem());
+    }
+
+    @Test
+    @DisplayName("No debería devolver el stock dos veces si llega un webhook de rechazo duplicado")
+    void testCancelarPedidoPorPagoRechazado_PedidoYaNoPendiente_NoTocaElStock() {
+        ProductoVariante variante = ProductoVariante.builder().id(21L).talle("L").stock(2).sku("SKU-L").build();
+        DetallePedido item = DetallePedido.builder().variante(variante).cantidad(3)
+                .estadoItem(EstadoPedido.PAGO_RECHAZADO).build();
+        Pedido yaRechazado = Pedido.builder().id(51L).estado(EstadoPedido.PAGO_RECHAZADO)
+                .items(List.of(item)).build();
+
+        when(pedidoRepository.findById(51L)).thenReturn(Optional.of(yaRechazado));
+
+        Pedido resultado = pedidoService.cancelarPedidoPorPagoRechazado(51L);
+
+        assertEquals(2, variante.getStock(), "El stock ya se había devuelto, no se duplica");
+        assertEquals(EstadoPedido.PAGO_RECHAZADO, resultado.getEstado());
+        verify(pedidoRepository, never()).save(any(Pedido.class));
+    }
 }
 
