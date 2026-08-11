@@ -1,6 +1,8 @@
 package com.ecommerce.service;
 
 import com.ecommerce.dto.CreatePedidoDTO;
+import com.ecommerce.dto.ProductoMasVendidoDTO;
+import com.ecommerce.dto.ReporteVentasDTO;
 import com.ecommerce.entity.*;
 import com.ecommerce.exception.PedidoNotFoundException;
 import com.ecommerce.exception.ProductoNotFoundException;
@@ -15,15 +17,31 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class PedidoService {
-    
+
+    // Pedidos en estos estados no representan plata efectivamente facturada, así que no
+    // cuentan como "venta" en los reportes: los que nunca llegaron a pagarse (PENDIENTE,
+    // PAGO_RECHAZADO), los cancelados (cancelarPedido() solo cancela pedidos PENDIENTE y
+    // los deja en CANCELADO_COMPRADOR) y los devueltos, cuya plata ya se reintegró.
+    // DEVOLUCION_SOLICITADA sí cuenta: el cobro sigue en pie hasta que la devolución se
+    // concreta y el pedido pasa a DEVUELTO.
+    private static final List<EstadoPedido> ESTADOS_NO_VENTA = List.of(
+            EstadoPedido.PENDIENTE,
+            EstadoPedido.PAGO_RECHAZADO,
+            EstadoPedido.CANCELADO,
+            EstadoPedido.CANCELADO_COMPRADOR,
+            EstadoPedido.CANCELADO_VENDEDOR,
+            EstadoPedido.DEVUELTO);
+
     @Autowired
     private PedidoRepository pedidoRepository;
     
@@ -35,7 +53,10 @@ public class PedidoService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
-    
+
+    @Autowired
+    private EmailService emailService;
+
     /**
      * Obtener todos los pedidos
      */
@@ -155,13 +176,17 @@ public class PedidoService {
     public Pedido actualizarEstado(Long pedidoId, EstadoPedido nuevoEstado) {
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new PedidoNotFoundException(pedidoId));
-        
+
         pedido.setEstado(nuevoEstado);
         pedido.setUpdatedAt(LocalDateTime.now());
-        
-        return pedidoRepository.save(pedido);
+
+        Pedido guardado = pedidoRepository.save(pedido);
+        // El resumen se arma acá, con la sesión abierta: el envío es @Async y no puede
+        // leer las relaciones LAZY del pedido desde el otro hilo (ver EmailService.ResumenPedido).
+        emailService.enviarCambioEstadoPedido(EmailService.ResumenPedido.de(guardado), nuevoEstado);
+        return guardado;
     }
-    
+
     /**
      * Cancelar un pedido
      * Devuelve el stock a los productos
@@ -223,7 +248,10 @@ public class PedidoService {
 
         pedido.setEstado(EstadoPedido.CONFIRMADO);
         pedido.setUpdatedAt(LocalDateTime.now());
-        return pedidoRepository.save(pedido);
+        Pedido guardado = pedidoRepository.save(pedido);
+        // Ídem actualizarEstado: el snapshot se resuelve con la sesión viva.
+        emailService.enviarConfirmacionPedido(EmailService.ResumenPedido.de(guardado));
+        return guardado;
     }
 
     /**
@@ -483,6 +511,41 @@ public class PedidoService {
         }
         
         return detalle;
+    }
+
+    // ==========================================
+    // REPORTES (ADMIN)
+    // ==========================================
+
+    /**
+     * Genera el reporte de ventas de un período: total facturado, ticket promedio,
+     * cantidad de pedidos y ranking de productos más vendidos.
+     * Solo cuentan como "venta" los pedidos que llegaron a pagarse (estado distinto de
+     * PENDIENTE y PAGO_RECHAZADO) — un carrito abandonado no es una venta.
+     */
+    @Transactional(readOnly = true)
+    public ReporteVentasDTO generarReporteVentas(LocalDateTime desde, LocalDateTime hasta) {
+        List<Pedido> pedidosPagados = pedidoRepository.findByCreatedAtBetweenAndEstadoNotIn(desde, hasta, ESTADOS_NO_VENTA);
+
+        BigDecimal ventasTotales = pedidosPagados.stream()
+                .map(Pedido::getTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal ticketPromedio = pedidosPagados.isEmpty()
+                ? BigDecimal.ZERO
+                : ventasTotales.divide(BigDecimal.valueOf(pedidosPagados.size()), 2, RoundingMode.HALF_UP);
+
+        List<ProductoMasVendidoDTO> productosMasVendidos = detallePedidoRepository
+                .productosMasVendidos(desde, hasta, ESTADOS_NO_VENTA).stream()
+                .map(p -> ProductoMasVendidoDTO.builder().nombre(p.getNombre()).cantidadVendida(p.getCantidadVendida()).build())
+                .collect(Collectors.toList());
+
+        return ReporteVentasDTO.builder()
+                .ventasTotales(ventasTotales)
+                .ticketPromedio(ticketPromedio)
+                .cantidadPedidos(pedidosPagados.size())
+                .productosMasVendidos(productosMasVendidos)
+                .build();
     }
 }
 

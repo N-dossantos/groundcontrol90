@@ -49,7 +49,10 @@ public class Usuario implements UserDetails {
     
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    
+
+    @Column(name = "terminos_aceptados_at")
+    private LocalDateTime terminosAceptadosAt;
+
     // Relación con productos (un usuario puede tener muchos productos)
     @OneToMany(mappedBy = "ownerUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default

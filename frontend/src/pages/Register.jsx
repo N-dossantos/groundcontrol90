@@ -4,6 +4,8 @@ import { useAuth } from "../context/AuthContext"
 import { useToast } from "../context/ToastContext"
 import { validateEmail, validatePassword, validateRequired } from "../utils/validators"
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react"
+import TermsModal from "../components/modals/TermsModal"
+import PrivacyModal from "../components/modals/PrivacyModal"
 const Register = () => {
   const [formData, setFormData] = useState({
     username: "",
@@ -14,6 +16,9 @@ const Register = () => {
   })
   const [errors, setErrors] = useState({})
   const [showPassword, setShowPassword] = useState(false)
+  const [aceptaTerminos, setAceptaTerminos] = useState(false)
+  const [showTerms, setShowTerms] = useState(false)
+  const [showPrivacy, setShowPrivacy] = useState(false)
   const { register, loading } = useAuth()
   const { error, success } = useToast()
   const navigate = useNavigate()
@@ -54,6 +59,9 @@ const Register = () => {
     if (!validateRequired(formData.lastName)) {
       newErrors.lastName = "El apellido es requerido"
     }
+    if (!aceptaTerminos) {
+      newErrors.aceptaTerminos = "Debés aceptar los Términos y Condiciones para crear una cuenta"
+    }
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -63,7 +71,7 @@ const Register = () => {
       return
     }
     try {
-      await register(formData)
+      await register({ ...formData, aceptaTerminos })
       success("Cuenta creada exitosamente")
       navigate("/")
     } catch (err) {
@@ -204,11 +212,31 @@ const Register = () => {
               </div>
               {errors.lastName && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.lastName}</p>}
             </div>
+            <div className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                id="aceptaTerminos"
+                checked={aceptaTerminos}
+                onChange={(e) => setAceptaTerminos(e.target.checked)}
+                className="mt-1"
+              />
+              <label htmlFor="aceptaTerminos" className="text-sm text-gray-600 dark:text-gray-300">
+                Acepto los{" "}
+                <button type="button" onClick={() => setShowTerms(true)} className="text-blue-600 dark:text-blue-400 underline">
+                  Términos y Condiciones
+                </button>{" "}
+                y la{" "}
+                <button type="button" onClick={() => setShowPrivacy(true)} className="text-blue-600 dark:text-blue-400 underline">
+                  Política de Privacidad
+                </button>
+              </label>
+            </div>
+            {errors.aceptaTerminos && <p className="text-sm text-red-600 dark:text-red-400">{errors.aceptaTerminos}</p>}
           </div>
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !aceptaTerminos}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
@@ -223,6 +251,8 @@ const Register = () => {
           </div>
         </form>
       </div>
+      <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
+      <PrivacyModal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
     </div>
   )
 }

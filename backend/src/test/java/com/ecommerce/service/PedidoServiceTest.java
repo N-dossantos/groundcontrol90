@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -23,6 +24,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,6 +42,9 @@ class PedidoServiceTest {
 
     @Mock
     private UsuarioRepository usuarioRepository;
+
+    @Mock
+    private EmailService emailService;
 
     @InjectMocks
     private PedidoService pedidoService;
@@ -330,9 +335,11 @@ class PedidoServiceTest {
     @Test
     @DisplayName("Debería confirmar el pedido y sus items cuando el pago es aprobado")
     void testConfirmarPago_MueveAConfirmado() {
-        DetallePedido item = DetallePedido.builder().cantidad(1).estadoItem(EstadoPedido.PENDIENTE).build();
-        Pedido pedidoPendiente = Pedido.builder().id(60L).estado(EstadoPedido.PENDIENTE)
-                .items(List.of(item)).build();
+        Usuario comprador = Usuario.builder().id(5L).nombre("Juan").email("juan@test.com").build();
+        DetallePedido item = DetallePedido.builder().productoNombre("Camiseta Boca").talle("M")
+                .cantidad(1).estadoItem(EstadoPedido.PENDIENTE).build();
+        Pedido pedidoPendiente = Pedido.builder().id(60L).usuario(comprador).estado(EstadoPedido.PENDIENTE)
+                .total(new BigDecimal("45000")).items(List.of(item)).build();
 
         when(pedidoRepository.findById(60L)).thenReturn(Optional.of(pedidoPendiente));
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -341,6 +348,15 @@ class PedidoServiceTest {
 
         assertEquals(EstadoPedido.CONFIRMADO, resultado.getEstado());
         assertEquals(EstadoPedido.CONFIRMADO, item.getEstadoItem());
+
+        // El mail se dispara con los datos ya resueltos, no con la entidad: si el resumen
+        // se armara en el hilo async, las relaciones LAZY del pedido ya no serían legibles.
+        ArgumentCaptor<EmailService.ResumenPedido> captor =
+                ArgumentCaptor.forClass(EmailService.ResumenPedido.class);
+        verify(emailService, times(1)).enviarConfirmacionPedido(captor.capture());
+        assertEquals(60L, captor.getValue().pedidoId());
+        assertEquals("juan@test.com", captor.getValue().email());
+        assertEquals(List.of("- Camiseta Boca (talle M) x1"), captor.getValue().lineas());
     }
 
     @Test
@@ -354,6 +370,25 @@ class PedidoServiceTest {
 
         assertEquals(EstadoPedido.CONFIRMADO, resultado.getEstado());
         verify(pedidoRepository, never()).save(any(Pedido.class));
+        verify(emailService, never()).enviarConfirmacionPedido(any(EmailService.ResumenPedido.class));
+    }
+
+    @Test
+    @DisplayName("Debería enviar email cuando el admin marca un pedido como ENVIADO")
+    void testActualizarEstado_Enviado_MandaEmail() {
+        Usuario comprador = Usuario.builder().id(5L).nombre("Juan").email("juan@test.com").build();
+        Pedido pedido = Pedido.builder().id(80L).usuario(comprador).estado(EstadoPedido.CONFIRMADO).items(List.of()).build();
+
+        when(pedidoRepository.findById(80L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        pedidoService.actualizarEstado(80L, EstadoPedido.ENVIADO);
+
+        ArgumentCaptor<EmailService.ResumenPedido> captor =
+                ArgumentCaptor.forClass(EmailService.ResumenPedido.class);
+        verify(emailService, times(1)).enviarCambioEstadoPedido(captor.capture(), eq(EstadoPedido.ENVIADO));
+        assertEquals(80L, captor.getValue().pedidoId());
+        assertEquals("juan@test.com", captor.getValue().email());
     }
 }
 
