@@ -6,6 +6,7 @@ import com.ecommerce.entity.Role;
 import com.ecommerce.entity.Usuario;
 import com.ecommerce.exception.DuplicateResourceException;
 import com.ecommerce.exception.UnauthorizedException;
+import com.ecommerce.service.EmailService;
 import com.ecommerce.service.UsuarioService;
 import com.ecommerce.util.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,9 @@ class AuthControllerTest {
 
     @Mock
     private JwtUtil jwtUtil;
+
+    @Mock
+    private EmailService emailService;
 
     @InjectMocks
     private AuthController authController;
@@ -171,6 +175,7 @@ class AuthControllerTest {
         verify(usuarioService, times(1)).existsByUsername("maria");
         verify(usuarioService, times(1)).save(any(Usuario.class));
         verify(jwtUtil, times(1)).generateToken("maria@test.com", 2L);
+        verify(emailService, times(1)).enviarConfirmacionCuenta(nuevoUsuario);
     }
 
     @Test

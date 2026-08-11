@@ -8,6 +8,7 @@ import com.ecommerce.entity.Usuario;
 import com.ecommerce.entity.Role;
 import com.ecommerce.exception.UnauthorizedException;
 import com.ecommerce.exception.DuplicateResourceException;
+import com.ecommerce.service.EmailService;
 import com.ecommerce.service.UsuarioService;
 import com.ecommerce.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,9 @@ public class AuthController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private EmailService emailService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
@@ -86,6 +90,8 @@ public class AuthController {
                 .build();
 
         Usuario usuarioGuardado = usuarioService.save(nuevoUsuario);
+
+        emailService.enviarConfirmacionCuenta(usuarioGuardado);
 
         // Generar token JWT
         String token = jwtUtil.generateToken(usuarioGuardado.getEmail(), usuarioGuardado.getId());
