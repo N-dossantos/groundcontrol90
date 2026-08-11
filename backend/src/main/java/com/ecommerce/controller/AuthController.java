@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 
+import java.time.LocalDateTime;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -87,6 +89,7 @@ public class AuthController {
                 .nombre(registerRequest.getNombre())
                 .apellido(registerRequest.getApellido())
                 .role(Role.USER) // Rol por defecto
+                .terminosAceptadosAt(LocalDateTime.now())
                 .build();
 
         Usuario usuarioGuardado = usuarioService.save(nuevoUsuario);
