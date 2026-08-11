@@ -121,7 +121,8 @@ export const api = {
           email: userData.email,
           password: userData.password,
           nombre: userData.firstName || userData.name?.split(' ')[0] || 'Usuario',
-          apellido: userData.lastName || userData.name?.split(' ')[1] || 'Apellido'
+          apellido: userData.lastName || userData.name?.split(' ')[1] || 'Apellido',
+          aceptaTerminos: userData.aceptaTerminos === true
         })
       })
       
