@@ -5,6 +5,7 @@ import com.ecommerce.entity.EstadoPedido;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -21,5 +22,8 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     
     // Contar pedidos de un usuario
     Long countByUsuarioId(Long usuarioId);
+
+    // Pedidos en un estado creados antes de cierto momento (checkouts abandonados)
+    List<Pedido> findByEstadoAndCreatedAtBefore(EstadoPedido estado, LocalDateTime limite);
 }
 
