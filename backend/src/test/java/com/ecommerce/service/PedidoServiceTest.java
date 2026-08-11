@@ -41,6 +41,9 @@ class PedidoServiceTest {
     @Mock
     private UsuarioRepository usuarioRepository;
 
+    @Mock
+    private EmailService emailService;
+
     @InjectMocks
     private PedidoService pedidoService;
 
@@ -341,6 +344,7 @@ class PedidoServiceTest {
 
         assertEquals(EstadoPedido.CONFIRMADO, resultado.getEstado());
         assertEquals(EstadoPedido.CONFIRMADO, item.getEstadoItem());
+        verify(emailService, times(1)).enviarConfirmacionPedido(pedidoPendiente);
     }
 
     @Test
@@ -354,6 +358,21 @@ class PedidoServiceTest {
 
         assertEquals(EstadoPedido.CONFIRMADO, resultado.getEstado());
         verify(pedidoRepository, never()).save(any(Pedido.class));
+        verify(emailService, never()).enviarConfirmacionPedido(any(Pedido.class));
+    }
+
+    @Test
+    @DisplayName("Debería enviar email cuando el admin marca un pedido como ENVIADO")
+    void testActualizarEstado_Enviado_MandaEmail() {
+        Usuario comprador = Usuario.builder().id(5L).nombre("Juan").email("juan@test.com").build();
+        Pedido pedido = Pedido.builder().id(80L).usuario(comprador).estado(EstadoPedido.CONFIRMADO).items(List.of()).build();
+
+        when(pedidoRepository.findById(80L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        pedidoService.actualizarEstado(80L, EstadoPedido.ENVIADO);
+
+        verify(emailService, times(1)).enviarCambioEstadoPedido(pedido, EstadoPedido.ENVIADO);
     }
 }
 

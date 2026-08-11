@@ -35,7 +35,10 @@ public class PedidoService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
-    
+
+    @Autowired
+    private EmailService emailService;
+
     /**
      * Obtener todos los pedidos
      */
@@ -155,13 +158,15 @@ public class PedidoService {
     public Pedido actualizarEstado(Long pedidoId, EstadoPedido nuevoEstado) {
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new PedidoNotFoundException(pedidoId));
-        
+
         pedido.setEstado(nuevoEstado);
         pedido.setUpdatedAt(LocalDateTime.now());
-        
-        return pedidoRepository.save(pedido);
+
+        Pedido guardado = pedidoRepository.save(pedido);
+        emailService.enviarCambioEstadoPedido(guardado, nuevoEstado);
+        return guardado;
     }
-    
+
     /**
      * Cancelar un pedido
      * Devuelve el stock a los productos
@@ -223,7 +228,9 @@ public class PedidoService {
 
         pedido.setEstado(EstadoPedido.CONFIRMADO);
         pedido.setUpdatedAt(LocalDateTime.now());
-        return pedidoRepository.save(pedido);
+        Pedido guardado = pedidoRepository.save(pedido);
+        emailService.enviarConfirmacionPedido(guardado);
+        return guardado;
     }
 
     /**
