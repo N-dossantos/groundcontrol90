@@ -1,19 +1,44 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
+import { useAuth } from "../context/AuthContext"
 import { useFetch } from "../hooks/useFetch"
 import { api } from "../services/api"
 import { formatPrice } from "../utils/formatters"
 import LoadingSpinner from "../components/LoadingSpinner"
-import { ArrowLeft, TrendingUp, ShoppingBag, DollarSign } from "lucide-react"
+import { ArrowLeft, TrendingUp, ShoppingBag, DollarSign, AlertCircle } from "lucide-react"
 
 const AdminReportes = () => {
+  const { user } = useAuth()
   const [desde, setDesde] = useState("")
   const [hasta, setHasta] = useState("")
 
+  // ProtectedRoute solo chequea que haya sesión iniciada, no el rol, así que el gate de
+  // admin va acá (mismo criterio que AdminPanel). El backend igual exige ADMIN en
+  // /api/pedidos/admin/reportes; esto evita que un usuario común se coma un 403 crudo.
+  const isAdmin = user?.role === 'admin'
+
   const { data: reporte, loading, error } = useFetch(
-    () => api.getReporteVentas({ desde: desde || undefined, hasta: hasta || undefined }),
-    [desde, hasta]
+    () => isAdmin
+      ? api.getReporteVentas({ desde: desde || undefined, hasta: hasta || undefined })
+      : Promise.resolve(null),
+    [desde, hasta, isAdmin]
   )
+
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            Acceso Restringido
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300">
+            No tienes permisos para acceder a esta sección
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-5xl mx-auto">
