@@ -326,5 +326,34 @@ class PedidoServiceTest {
         assertEquals(EstadoPedido.PAGO_RECHAZADO, resultado.getEstado());
         verify(pedidoRepository, never()).save(any(Pedido.class));
     }
+
+    @Test
+    @DisplayName("Debería confirmar el pedido y sus items cuando el pago es aprobado")
+    void testConfirmarPago_MueveAConfirmado() {
+        DetallePedido item = DetallePedido.builder().cantidad(1).estadoItem(EstadoPedido.PENDIENTE).build();
+        Pedido pedidoPendiente = Pedido.builder().id(60L).estado(EstadoPedido.PENDIENTE)
+                .items(List.of(item)).build();
+
+        when(pedidoRepository.findById(60L)).thenReturn(Optional.of(pedidoPendiente));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Pedido resultado = pedidoService.confirmarPago(60L);
+
+        assertEquals(EstadoPedido.CONFIRMADO, resultado.getEstado());
+        assertEquals(EstadoPedido.CONFIRMADO, item.getEstadoItem());
+    }
+
+    @Test
+    @DisplayName("No debería tocar un pedido que ya salió de PENDIENTE (webhook duplicado)")
+    void testConfirmarPago_PedidoYaNoPendiente_NoHaceNada() {
+        Pedido yaConfirmado = Pedido.builder().id(61L).estado(EstadoPedido.CONFIRMADO)
+                .items(List.of()).build();
+        when(pedidoRepository.findById(61L)).thenReturn(Optional.of(yaConfirmado));
+
+        Pedido resultado = pedidoService.confirmarPago(61L);
+
+        assertEquals(EstadoPedido.CONFIRMADO, resultado.getEstado());
+        verify(pedidoRepository, never()).save(any(Pedido.class));
+    }
 }
 

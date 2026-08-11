@@ -202,6 +202,31 @@ public class PedidoService {
     }
     
     /**
+     * Confirmar un pedido porque la pasarela acreditó el pago.
+     *
+     * Es idempotente: Mercado Pago puede reenviar el mismo webhook varias veces, y un
+     * pedido que ya salió de PENDIENTE no se vuelve a tocar.
+     */
+    public Pedido confirmarPago(Long pedidoId) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new PedidoNotFoundException(pedidoId));
+
+        if (pedido.getEstado() != EstadoPedido.PENDIENTE) {
+            return pedido;
+        }
+
+        for (DetallePedido detalle : pedido.getItems()) {
+            if (detalle.getEstadoItem() == EstadoPedido.PENDIENTE) {
+                detalle.setEstadoItem(EstadoPedido.CONFIRMADO);
+            }
+        }
+
+        pedido.setEstado(EstadoPedido.CONFIRMADO);
+        pedido.setUpdatedAt(LocalDateTime.now());
+        return pedidoRepository.save(pedido);
+    }
+
+    /**
      * Cancelar un pedido porque la pasarela rechazó (o canceló) el pago, devolviendo
      * el stock reservado en el checkout.
      *
