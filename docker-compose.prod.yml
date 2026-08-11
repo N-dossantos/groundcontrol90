@@ -24,11 +24,11 @@ services:
       retries: 5
 
   # ========================================
-  # BACKEND - SPRING BOOT (DESDE DOCKER HUB)
+  # BACKEND - SPRING BOOT (DESDE GITHUB CONTAINER REGISTRY)
   # ========================================
   backend:
-    # Usar imagen publicada en Docker Hub
-    image: bautistabozzer/ecommerce-backend:latest
+    # Imagen publicada automáticamente por CI al mergear a main
+    image: "${BACKEND_IMAGE:?Falta BACKEND_IMAGE en el .env, por ejemplo ghcr.io/tu-org/ecommerce-backend:latest}"
     container_name: ecommerce-backend
     restart: unless-stopped
     # Sin ports: solo accesible dentro de ecommerce-network, detrás del proxy
@@ -44,6 +44,13 @@ services:
       - MERCADOPAGO_WEBHOOK_SECRET=${MERCADOPAGO_WEBHOOK_SECRET:?Falta MERCADOPAGO_WEBHOOK_SECRET en el .env}
       - FRONTEND_URL=${FRONTEND_URL:?Falta FRONTEND_URL en el .env}
       - BACKEND_URL=${BACKEND_URL:?Falta BACKEND_URL en el .env}
+      # SMTP: application-prod.properties las exige sin default, así que sin estas
+      # variables el backend ni siquiera arranca.
+      - SMTP_HOST=${SMTP_HOST:?Falta SMTP_HOST en el .env}
+      - SMTP_PORT=${SMTP_PORT:?Falta SMTP_PORT en el .env}
+      - SMTP_USERNAME=${SMTP_USERNAME:?Falta SMTP_USERNAME en el .env}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:?Falta SMTP_PASSWORD en el .env}
+      - MAIL_FROM=${MAIL_FROM:?Falta MAIL_FROM en el .env}
       - SERVER_PORT=8081
     depends_on:
       mysql-db:
@@ -60,11 +67,11 @@ services:
     pull_policy: always
 
   # ========================================
-  # FRONTEND - REACT + VITE (DESDE DOCKER HUB)
+  # FRONTEND - REACT + VITE (DESDE GITHUB CONTAINER REGISTRY)
   # ========================================
   frontend:
-    # Usar imagen publicada en Docker Hub
-    image: bautistabozzer/ecommerce-frontend:latest
+    # Imagen publicada automáticamente por CI al mergear a main
+    image: "${FRONTEND_IMAGE:?Falta FRONTEND_IMAGE en el .env, por ejemplo ghcr.io/tu-org/ecommerce-frontend:latest}"
     container_name: ecommerce-frontend
     restart: unless-stopped
     # Sin ports: solo accesible dentro de ecommerce-network, detrás del proxy

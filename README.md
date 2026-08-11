@@ -14,13 +14,15 @@ docker-compose up -d --build
 # ¡Listo! Los servicios están corriendo
 ```
 
-#### Opción B: Producción (usar imágenes de Docker Hub)
-```powershell
-# Descargar y usar imágenes publicadas (más rápido)
-docker-compose -f docker-compose.prod.yml up -d
-
-# ¡Listo! Los servicios están corriendo
+#### Opción B: Producción (usar imágenes publicadas por CI)
+```bash
+# Requiere un .env completo: ver "Deploy a producción" más abajo
+docker compose -f docker-compose.prod.yml up -d
 ```
+
+Las imágenes las publica automáticamente GitHub Actions en **GitHub Container Registry**
+(`ghcr.io`) en cada merge a `main` — no hay que construirlas ni subirlas a mano, ni
+depender de la cuenta personal de nadie.
 
 ### 💻 Método 2: Desarrollo Local (Manual)
 
@@ -122,18 +124,19 @@ docker-compose down                 # Detener servicios
 docker-compose down -v              # Detener y eliminar volúmenes
 ```
 
-#### Producción (usar imágenes de Docker Hub)
-```powershell
-# Usar imágenes publicadas en Docker Hub (más rápido)
-docker-compose -f docker-compose.prod.yml up -d     # Descargar y usar imágenes de Docker Hub
-docker-compose -f docker-compose.prod.yml logs -f   # Ver logs
-docker-compose -f docker-compose.prod.yml ps         # Ver estado
-docker-compose -f docker-compose.prod.yml down       # Detener servicios
+#### Producción (usar imágenes publicadas por CI)
+```bash
+docker compose -f docker-compose.prod.yml up -d      # Descargar y levantar las imágenes de ghcr.io
+docker compose -f docker-compose.prod.yml logs -f    # Ver logs
+docker compose -f docker-compose.prod.yml ps          # Ver estado
+docker compose -f docker-compose.prod.yml down        # Detener servicios
 ```
 
 **Diferencia**:
 - `docker-compose.yml` → Construye las imágenes desde tu código local
-- `docker-compose.prod.yml` → Descarga y usa las imágenes de Docker Hub (`bautistabozzer/ecommerce-backend:latest`)
+- `docker-compose.prod.yml` → Descarga las imágenes que publicó CI en GitHub Container
+  Registry, según `BACKEND_IMAGE`/`FRONTEND_IMAGE` del `.env`
+  (ej. `ghcr.io/tu-org/ecommerce-backend:latest`)
 
 ### 💻 Desarrollo Local
 ```powershell
@@ -155,6 +158,117 @@ mvnd spring-boot:run
 docker ps                                           # MySQL corriendo
 netstat -an | Select-String ":8081"                # Backend corriendo
 netstat -an | Select-String ":5173"                # Frontend corriendo
+```
+
+---
+
+## 🚢 Deploy a Producción
+
+Procedimiento completo para levantar el stack en un servidor real desde cero. Se corre
+una sola vez (y sirve de guía si hay que migrar de servidor).
+
+### 1. Provisionar el VPS
+Cualquier proveedor sirve (DigitalOcean, Hetzner, AWS EC2). Mínimo **2GB de RAM** —
+conviven MySQL, el backend Java, el frontend y Caddy — con **Ubuntu 22.04 LTS** o superior.
+
+### 2. Instalar Docker
+```bash
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+# cerrar sesión y volver a entrar para que el grupo docker tome efecto
+docker compose version
+```
+
+### 3. Apuntar el dominio
+Crear un registro `A` en el proveedor de DNS apuntando a la IP pública del VPS.
+Verificar la propagación con `dig tu-dominio.com` antes de seguir: Caddy no puede
+emitir el certificado TLS si el dominio todavía no resuelve al servidor.
+
+### 4. Clonar el repo y configurar el `.env`
+```bash
+git clone <url-del-repo> ecommerce
+cd ecommerce
+cp .env.example .env
+nano .env
+```
+
+Completar **todas** las variables del `.env` (el compose falla al arrancar, con el
+nombre de la variable que falta, si queda alguna vacía):
+- Credenciales de MySQL
+- `JWT_SECRET` — generar con `openssl rand -base64 64`
+- `CORS_ALLOWED_ORIGINS`, `DOMAIN`, `FRONTEND_URL`, `BACKEND_URL` con el dominio real
+- `MERCADOPAGO_ACCESS_TOKEN`/`PUBLIC_KEY`/`WEBHOOK_SECRET` **de producción** (no las de test)
+- `SMTP_HOST`/`PORT`/`USERNAME`/`PASSWORD` y `MAIL_FROM` — sin esto el backend no arranca
+- `BACKEND_IMAGE`/`FRONTEND_IMAGE` con el owner real de GitHub
+
+### 5. Levantar el stack
+```bash
+docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml ps
+```
+Los cuatro servicios (`mysql-db`, `backend`, `frontend`, `proxy`) deben quedar en
+`running`/`healthy`.
+
+### 6. Verificar HTTPS
+```bash
+curl -I https://tu-dominio.com
+```
+Debe devolver `HTTP/2 200` con certificado válido. Caddy lo emite automáticamente
+contra Let's Encrypt la primera vez que recibe tráfico en el dominio configurado;
+puede tardar unos segundos.
+
+### 7. Antes de anunciar el lanzamiento
+Correr completo el [checklist de go-live](./docs/superpowers/plans/checklist-go-live.md),
+que valida el flujo de pago real de punta a punta.
+
+---
+
+## 💾 Backups
+
+`scripts/backup-mysql.sh` genera un dump comprimido de la base, rota los backups
+locales más viejos que `BACKUP_RETENCION_DIAS` (7 por defecto) y, si `BACKUP_S3_BUCKET`
+está configurado, sube la copia a un bucket S3-compatible.
+
+Correrlo a mano:
+```bash
+set -a && source .env && set +a
+./scripts/backup-mysql.sh
+```
+
+Instalar el cron en el servidor (se hace en el VPS, no desde CI: darle a un runner de
+GitHub acceso de escritura a producción es peor que el problema que resuelve):
+```bash
+crontab -e
+# agregar — backup diario a las 3 AM con el .env de producción cargado:
+0 3 * * * cd /ruta/al/repo && set -a && source .env && set +a && ./scripts/backup-mysql.sh >> /var/log/ecommerce-backup.log 2>&1
+```
+
+Un backup que vive solo en el mismo disco que la base no protege contra perder el
+servidor: configurar `BACKUP_S3_BUCKET` (y `BACKUP_S3_ENDPOINT` si el proveedor no es
+AWS) para tener la copia afuera.
+
+Restaurar un backup:
+```bash
+gunzip -c ecommerce_db-20260811-030000.sql.gz | docker exec -i ecommerce-mysql mysql -u root -p ecommerce_db
+```
+
+---
+
+## ⚙️ CI/CD
+
+Dos workflows de GitHub Actions:
+
+| Workflow | Cuándo corre | Qué hace |
+|---|---|---|
+| `.github/workflows/backend-ci.yml` | push y PR a `main` | Corre la suite de tests del backend (`mvn -B test`) |
+| `.github/workflows/build-and-push.yml` | push a `main` | Construye las imágenes de backend y frontend y las publica en `ghcr.io` con los tags `latest` y el SHA del commit |
+
+Las imágenes se publican con el `GITHUB_TOKEN` del propio repositorio: no hay
+credenciales de registry que gestionar. Para desplegar la última versión en el
+servidor alcanza con:
+```bash
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ---
