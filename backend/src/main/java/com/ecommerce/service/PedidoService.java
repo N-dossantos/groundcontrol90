@@ -170,7 +170,9 @@ public class PedidoService {
         pedido.setUpdatedAt(LocalDateTime.now());
 
         Pedido guardado = pedidoRepository.save(pedido);
-        emailService.enviarCambioEstadoPedido(guardado, nuevoEstado);
+        // El resumen se arma acá, con la sesión abierta: el envío es @Async y no puede
+        // leer las relaciones LAZY del pedido desde el otro hilo (ver EmailService.ResumenPedido).
+        emailService.enviarCambioEstadoPedido(EmailService.ResumenPedido.de(guardado), nuevoEstado);
         return guardado;
     }
 
@@ -236,7 +238,8 @@ public class PedidoService {
         pedido.setEstado(EstadoPedido.CONFIRMADO);
         pedido.setUpdatedAt(LocalDateTime.now());
         Pedido guardado = pedidoRepository.save(pedido);
-        emailService.enviarConfirmacionPedido(guardado);
+        // Ídem actualizarEstado: el snapshot se resuelve con la sesión viva.
+        emailService.enviarConfirmacionPedido(EmailService.ResumenPedido.de(guardado));
         return guardado;
     }
 

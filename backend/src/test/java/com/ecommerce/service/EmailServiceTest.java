@@ -61,11 +61,12 @@ class EmailServiceTest {
         Pedido pedido = Pedido.builder().id(77L).usuario(usuario).total(new BigDecimal("45000"))
                 .items(List.of(item)).build();
 
-        emailService.enviarConfirmacionPedido(pedido);
+        emailService.enviarConfirmacionPedido(EmailService.ResumenPedido.de(pedido));
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
         assertTrue(captor.getValue().getSubject().contains("77"));
+        assertTrue(captor.getValue().getText().contains("Camiseta Boca"));
     }
 
     @Test
@@ -75,7 +76,7 @@ class EmailServiceTest {
         Pedido pedido = Pedido.builder().id(78L).usuario(usuario).total(new BigDecimal("45000"))
                 .items(List.of()).build();
 
-        emailService.enviarCambioEstadoPedido(pedido, EstadoPedido.ENVIADO);
+        emailService.enviarCambioEstadoPedido(EmailService.ResumenPedido.de(pedido), EstadoPedido.ENVIADO);
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
