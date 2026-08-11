@@ -395,6 +395,20 @@ export const api = {
     }
   },
 
+  /**
+   * Obtener el reporte de ventas (solo ADMIN).
+   * `desde`/`hasta` llegan como YYYY-MM-DD (de un <input type="date">); el
+   * backend espera ISO-8601 con hora, así que se completa el horario acá:
+   * `desde` al inicio del día y `hasta` al final, para incluir todo ese día.
+   * Si no se pasan, el backend usa los últimos 30 días por defecto.
+   */
+  async getReporteVentas({ desde, hasta } = {}) {
+    const params = new URLSearchParams()
+    if (desde) params.set('desde', `${desde}T00:00:00`)
+    if (hasta) params.set('hasta', `${hasta}T23:59:59`)
+    return request(`/pedidos/admin/reportes?${params.toString()}`)
+  },
+
   // ===== PAGOS (MERCADO PAGO) =====
 
   /**

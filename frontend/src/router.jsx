@@ -14,6 +14,7 @@ import Orders from "./pages/Orders"
 import OrderDetail from "./pages/OrderDetail"
 import Sales from "./pages/Sales"
 import AdminPanel from "./pages/AdminPanel"
+import AdminReportes from "./pages/AdminReportes"
 function AppRouter() {
   return (
     <Routes>
@@ -127,6 +128,16 @@ function AppRouter() {
           <ProtectedRoute>
             <Layout>
               <AdminPanel />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/reportes"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <AdminReportes />
             </Layout>
           </ProtectedRoute>
         }

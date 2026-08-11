@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { Link } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { useToast } from "../context/ToastContext"
 import { api } from "../services/api"
@@ -218,13 +219,19 @@ const AdminPanel = () => {
             Gestiona usuarios y permisos del sistema
           </p>
         </div>
-        <button
-          onClick={handleOpenCreateModal}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <UserPlus size={20} />
-          Crear Usuario
-        </button>
+        <div className="flex items-center gap-3">
+          <Link to="/admin/reportes" className="btn btn-secondary inline-flex items-center gap-2">
+            <BarChart3 size={18} />
+            Ver reportes de ventas
+          </Link>
+          <button
+            onClick={handleOpenCreateModal}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <UserPlus size={20} />
+            Crear Usuario
+          </button>
+        </div>
       </div>
 
       {/* Estadísticas */}
