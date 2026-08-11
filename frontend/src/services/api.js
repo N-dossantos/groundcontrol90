@@ -394,6 +394,38 @@ export const api = {
     }
   },
 
+  // ===== PAGOS (MERCADO PAGO) =====
+
+  /**
+   * Crear la preferencia de pago de un pedido.
+   * Devuelve { preferenceId, initPoint } — initPoint es la URL del checkout
+   * hosteado de Mercado Pago a la que hay que redirigir al comprador.
+   */
+  async crearPreferenciaPago(pedidoId) {
+    try {
+      const preferencia = await request(`/pagos/pedidos/${pedidoId}/preferencia`, {
+        method: 'POST'
+      })
+      return preferencia
+    } catch (error) {
+      throw new Error(error.message || 'Error al iniciar el pago')
+    }
+  },
+
+  /**
+   * Consultar el estado del pago de un pedido.
+   * Devuelve { estadoPago, estadoPedido } — el frontend hace polling porque el
+   * webhook de Mercado Pago puede llegar después del redirect de vuelta.
+   */
+  async getEstadoPago(pedidoId) {
+    try {
+      const estado = await request(`/pagos/pedidos/${pedidoId}/estado`)
+      return estado
+    } catch (error) {
+      throw new Error(error.message || 'Error al consultar el estado del pago')
+    }
+  },
+
   // ===== VENTAS (PARA VENDEDORES) =====
   
   /**
