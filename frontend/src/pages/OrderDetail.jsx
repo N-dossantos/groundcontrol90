@@ -79,6 +79,12 @@ const OrderDetail = () => {
         icon: XCircle,
         text: "Cancelado por Vendedor",
         description: "El vendedor canceló este pedido"
+      },
+      PAGO_RECHAZADO: {
+        color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+        icon: XCircle,
+        text: "Pago rechazado",
+        description: "El pago fue rechazado y el stock fue liberado"
       }
     }
 

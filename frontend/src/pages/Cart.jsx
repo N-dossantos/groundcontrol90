@@ -51,17 +51,14 @@ const Cart = () => {
         address: shippingAddress,
         notes: notes
       })
-      
-      setShowCheckoutModal(false)
-      success(`¡Pedido #${order.id} creado exitosamente!`)
-      
-      // Navegar al detalle del pedido
-      setTimeout(() => {
-        navigate(`/orders/${order.id}`)
-      }, 1000)
+
+      // El pedido ya reservó el stock; ahora se cobra en el checkout hosteado
+      // de Mercado Pago. No hay setIsCheckingOut(false) en el camino feliz
+      // porque la página navega fuera del dominio y el componente se desmonta.
+      const { initPoint } = await api.crearPreferenciaPago(order.id)
+      window.location.href = initPoint
     } catch (err) {
       error(err.message || "Error al procesar la compra")
-    } finally {
       setIsCheckingOut(false)
     }
   }

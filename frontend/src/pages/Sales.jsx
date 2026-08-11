@@ -95,7 +95,8 @@ const Sales = () => {
       CANCELADO_COMPRADOR: "Cancelado por Comprador",
       CANCELADO_VENDEDOR: "Cancelado por Vendedor",
       DEVOLUCION_SOLICITADA: "Devolución Solicitada",
-      DEVUELTO: "Devuelto"
+      DEVUELTO: "Devuelto",
+      PAGO_RECHAZADO: "Pago rechazado"
     }
     return statusMap[status] || status
   }
@@ -142,6 +143,10 @@ const Sales = () => {
       DEVUELTO: {
         color: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
         icon: RefreshCw,
+      },
+      PAGO_RECHAZADO: {
+        color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+        icon: XCircle,
       }
     }
 

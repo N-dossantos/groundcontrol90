@@ -7,6 +7,7 @@ import Register from "./pages/Register"
 import Home from "./pages/Home"
 import ProductDetail from "./pages/ProductDetail"
 import Cart from "./pages/Cart"
+import CheckoutResultado from "./pages/CheckoutResultado"
 import DashboardProducts from "./pages/DashboardProducts"
 import ProductForm from "./pages/ProductForm"
 import Orders from "./pages/Orders"
@@ -46,6 +47,16 @@ function AppRouter() {
           <ProtectedRoute>
             <Layout>
               <Cart />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/checkout/resultado"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <CheckoutResultado />
             </Layout>
           </ProtectedRoute>
         }
