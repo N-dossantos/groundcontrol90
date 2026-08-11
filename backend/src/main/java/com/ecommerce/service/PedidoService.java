@@ -28,8 +28,19 @@ import java.util.stream.Collectors;
 @Transactional
 public class PedidoService {
 
-    // Pedidos en estos estados no llegaron a pagarse: no cuentan como "venta" en los reportes
-    private static final List<EstadoPedido> ESTADOS_NO_VENTA = List.of(EstadoPedido.PENDIENTE, EstadoPedido.PAGO_RECHAZADO);
+    // Pedidos en estos estados no representan plata efectivamente facturada, así que no
+    // cuentan como "venta" en los reportes: los que nunca llegaron a pagarse (PENDIENTE,
+    // PAGO_RECHAZADO), los cancelados (cancelarPedido() solo cancela pedidos PENDIENTE y
+    // los deja en CANCELADO_COMPRADOR) y los devueltos, cuya plata ya se reintegró.
+    // DEVOLUCION_SOLICITADA sí cuenta: el cobro sigue en pie hasta que la devolución se
+    // concreta y el pedido pasa a DEVUELTO.
+    private static final List<EstadoPedido> ESTADOS_NO_VENTA = List.of(
+            EstadoPedido.PENDIENTE,
+            EstadoPedido.PAGO_RECHAZADO,
+            EstadoPedido.CANCELADO,
+            EstadoPedido.CANCELADO_COMPRADOR,
+            EstadoPedido.CANCELADO_VENDEDOR,
+            EstadoPedido.DEVUELTO);
 
     @Autowired
     private PedidoRepository pedidoRepository;

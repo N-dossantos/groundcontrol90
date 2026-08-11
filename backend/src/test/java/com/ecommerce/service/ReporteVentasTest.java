@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -36,6 +37,7 @@ class ReporteVentasTest {
     @Autowired private ProductoVarianteRepository productoVarianteRepository;
 
     private Usuario vendedor;
+    private Usuario comprador;
     private int contadorSku = 0;
 
     @BeforeEach
@@ -49,7 +51,7 @@ class ReporteVentasTest {
         productoRepository.deleteAll();
         usuarioRepository.deleteAll();
 
-        Usuario comprador = usuarioRepository.save(Usuario.builder()
+        comprador = usuarioRepository.save(Usuario.builder()
                 .nombre("C").apellido("C").username("comprador3").email("comprador3@test.com")
                 .password("x").role(Role.USER).build());
         vendedor = usuarioRepository.save(Usuario.builder()
@@ -103,6 +105,39 @@ class ReporteVentasTest {
         assertEquals(3, reporte.getCantidadPedidos());
         assertEquals("Camiseta Boca", reporte.getProductosMasVendidos().get(0).getNombre());
         assertEquals(3L, reporte.getProductosMasVendidos().get(0).getCantidadVendida());
+    }
+
+    @Test
+    @DisplayName("No debería contar como venta un pedido cancelado por el comprador")
+    void testGenerarReporteVentas_IgnoraCanceladosPorElComprador() {
+        // cancelarPedido() solo cancela pedidos PENDIENTE (nunca llegaron a pagarse) y los
+        // deja en CANCELADO_COMPRADOR, así que no pueden sumar facturación ni unidades.
+        guardarPedido(comprador, "Camiseta Cancelada", 4, new BigDecimal("30000"),
+                EstadoPedido.CANCELADO_COMPRADOR);
+
+        ReporteVentasDTO reporte = pedidoService.generarReporteVentas(
+                LocalDateTime.now().minusDays(1), LocalDateTime.now().plusDays(1));
+
+        assertBigDecimalEquals("155000", reporte.getVentasTotales());
+        assertEquals(3, reporte.getCantidadPedidos());
+        assertTrue(reporte.getProductosMasVendidos().stream()
+                        .noneMatch(p -> "Camiseta Cancelada".equals(p.getNombre())),
+                "El producto de un pedido cancelado no debería aparecer en el ranking");
+    }
+
+    @Test
+    @DisplayName("No debería contar como venta un pedido cancelado por el vendedor ni uno devuelto")
+    void testGenerarReporteVentas_IgnoraCanceladosPorElVendedorYDevueltos() {
+        guardarPedido(comprador, "Camiseta Cancelada Vendedor", 4, new BigDecimal("30000"),
+                EstadoPedido.CANCELADO_VENDEDOR);
+        guardarPedido(comprador, "Camiseta Devuelta", 2, new BigDecimal("30000"),
+                EstadoPedido.DEVUELTO);
+
+        ReporteVentasDTO reporte = pedidoService.generarReporteVentas(
+                LocalDateTime.now().minusDays(1), LocalDateTime.now().plusDays(1));
+
+        assertBigDecimalEquals("155000", reporte.getVentasTotales());
+        assertEquals(3, reporte.getCantidadPedidos());
     }
 
     private void assertBigDecimalEquals(String esperado, BigDecimal real) {
