@@ -44,6 +44,13 @@ services:
       - MERCADOPAGO_WEBHOOK_SECRET=${MERCADOPAGO_WEBHOOK_SECRET:?Falta MERCADOPAGO_WEBHOOK_SECRET en el .env}
       - FRONTEND_URL=${FRONTEND_URL:?Falta FRONTEND_URL en el .env}
       - BACKEND_URL=${BACKEND_URL:?Falta BACKEND_URL en el .env}
+      # SMTP: application-prod.properties las exige sin default, así que sin estas
+      # variables el backend ni siquiera arranca.
+      - SMTP_HOST=${SMTP_HOST:?Falta SMTP_HOST en el .env}
+      - SMTP_PORT=${SMTP_PORT:?Falta SMTP_PORT en el .env}
+      - SMTP_USERNAME=${SMTP_USERNAME:?Falta SMTP_USERNAME en el .env}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:?Falta SMTP_PASSWORD en el .env}
+      - MAIL_FROM=${MAIL_FROM:?Falta MAIL_FROM en el .env}
       - SERVER_PORT=8081
     depends_on:
       mysql-db:
