@@ -3,8 +3,11 @@ package com.ecommerce.repository;
 import com.ecommerce.entity.DetallePedido;
 import com.ecommerce.entity.EstadoPedido;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -32,5 +35,24 @@ public interface DetallePedidoRepository extends JpaRepository<DetallePedido, Lo
     
     // Contar ventas de un vendedor por estado
     Long countByVendedorIdAndEstadoItem(Long vendedorId, EstadoPedido estadoItem);
+
+    // ========== MÉTODOS PARA REPORTES (ADMIN) ==========
+
+    interface ProductoMasVendidoProjection {
+        String getNombre();
+        Long getCantidadVendida();
+    }
+
+    // Ranking de productos por cantidad vendida en un período, excluyendo pedidos que no llegaron a pagarse
+    @Query("SELECT d.productoNombre AS nombre, SUM(d.cantidad) AS cantidadVendida " +
+           "FROM DetallePedido d " +
+           "WHERE d.pedido.createdAt BETWEEN :desde AND :hasta " +
+           "AND d.pedido.estado NOT IN :estadosExcluidos " +
+           "GROUP BY d.productoNombre " +
+           "ORDER BY SUM(d.cantidad) DESC")
+    List<ProductoMasVendidoProjection> productosMasVendidos(
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta,
+            @Param("estadosExcluidos") List<EstadoPedido> estadosExcluidos);
 }
 

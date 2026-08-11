@@ -25,5 +25,8 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
     // Pedidos en un estado creados antes de cierto momento (checkouts abandonados)
     List<Pedido> findByEstadoAndCreatedAtBefore(EstadoPedido estado, LocalDateTime limite);
+
+    // Pedidos "venta" en un período (excluye estados que no llegaron a pagarse, ej. PENDIENTE/PAGO_RECHAZADO)
+    List<Pedido> findByCreatedAtBetweenAndEstadoNotIn(LocalDateTime desde, LocalDateTime hasta, List<EstadoPedido> estadosExcluidos);
 }
 

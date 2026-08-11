@@ -2,6 +2,7 @@ package com.ecommerce.controller;
 
 import com.ecommerce.dto.CreatePedidoDTO;
 import com.ecommerce.dto.PedidoDTO;
+import com.ecommerce.dto.ReporteVentasDTO;
 import com.ecommerce.entity.EstadoPedido;
 import com.ecommerce.entity.Pedido;
 import com.ecommerce.entity.Usuario;
@@ -9,12 +10,14 @@ import com.ecommerce.exception.PedidoNotFoundException;
 import com.ecommerce.exception.ForbiddenException;
 import com.ecommerce.service.PedidoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -176,6 +179,23 @@ public class PedidoController {
                 .count());
         
         return ResponseEntity.ok(estadisticas);
+    }
+
+    /**
+     * GET /api/pedidos/admin/reportes?desde=&hasta=
+     * Reporte de ventas de un período: total facturado, ticket promedio, cantidad de
+     * pedidos y ranking de productos más vendidos (ADMIN).
+     * `desde`/`hasta` son opcionales y se reciben en formato ISO-8601 con hora
+     * (ej. 2026-08-01T00:00:00). Si no vienen, se usa el default: últimos 30 días.
+     */
+    @GetMapping("/admin/reportes")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ReporteVentasDTO> obtenerReporteVentas(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta) {
+        LocalDateTime desdeEfectivo = desde != null ? desde : LocalDateTime.now().minusDays(30);
+        LocalDateTime hastaEfectivo = hasta != null ? hasta : LocalDateTime.now();
+        return ResponseEntity.ok(pedidoService.generarReporteVentas(desdeEfectivo, hastaEfectivo));
     }
 
 }

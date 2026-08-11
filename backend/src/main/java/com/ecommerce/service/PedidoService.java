@@ -1,6 +1,8 @@
 package com.ecommerce.service;
 
 import com.ecommerce.dto.CreatePedidoDTO;
+import com.ecommerce.dto.ProductoMasVendidoDTO;
+import com.ecommerce.dto.ReporteVentasDTO;
 import com.ecommerce.entity.*;
 import com.ecommerce.exception.PedidoNotFoundException;
 import com.ecommerce.exception.ProductoNotFoundException;
@@ -15,15 +17,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class PedidoService {
-    
+
+    // Pedidos en estos estados no llegaron a pagarse: no cuentan como "venta" en los reportes
+    private static final List<EstadoPedido> ESTADOS_NO_VENTA = List.of(EstadoPedido.PENDIENTE, EstadoPedido.PAGO_RECHAZADO);
+
     @Autowired
     private PedidoRepository pedidoRepository;
     
@@ -490,6 +497,41 @@ public class PedidoService {
         }
         
         return detalle;
+    }
+
+    // ==========================================
+    // REPORTES (ADMIN)
+    // ==========================================
+
+    /**
+     * Genera el reporte de ventas de un período: total facturado, ticket promedio,
+     * cantidad de pedidos y ranking de productos más vendidos.
+     * Solo cuentan como "venta" los pedidos que llegaron a pagarse (estado distinto de
+     * PENDIENTE y PAGO_RECHAZADO) — un carrito abandonado no es una venta.
+     */
+    @Transactional(readOnly = true)
+    public ReporteVentasDTO generarReporteVentas(LocalDateTime desde, LocalDateTime hasta) {
+        List<Pedido> pedidosPagados = pedidoRepository.findByCreatedAtBetweenAndEstadoNotIn(desde, hasta, ESTADOS_NO_VENTA);
+
+        BigDecimal ventasTotales = pedidosPagados.stream()
+                .map(Pedido::getTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal ticketPromedio = pedidosPagados.isEmpty()
+                ? BigDecimal.ZERO
+                : ventasTotales.divide(BigDecimal.valueOf(pedidosPagados.size()), 2, RoundingMode.HALF_UP);
+
+        List<ProductoMasVendidoDTO> productosMasVendidos = detallePedidoRepository
+                .productosMasVendidos(desde, hasta, ESTADOS_NO_VENTA).stream()
+                .map(p -> ProductoMasVendidoDTO.builder().nombre(p.getNombre()).cantidadVendida(p.getCantidadVendida()).build())
+                .collect(Collectors.toList());
+
+        return ReporteVentasDTO.builder()
+                .ventasTotales(ventasTotales)
+                .ticketPromedio(ticketPromedio)
+                .cantidadPedidos(pedidosPagados.size())
+                .productosMasVendidos(productosMasVendidos)
+                .build();
     }
 }
 
