@@ -87,6 +87,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categorias/**").permitAll()
+
+                // El webhook no lleva JWT: Mercado Pago no tiene el token de ningún
+                // usuario. Su seguridad es la validación de firma HMAC en PagoController,
+                // no Spring Security. /api/pagos/config solo expone la public key.
+                .requestMatchers(HttpMethod.POST, "/api/pagos/webhook").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/pagos/config").permitAll()
                 
                 // Endpoints para administradores
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
