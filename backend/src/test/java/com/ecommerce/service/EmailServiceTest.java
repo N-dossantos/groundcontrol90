@@ -9,6 +9,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mail.MailSendException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -17,6 +18,8 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -77,5 +80,14 @@ class EmailServiceTest {
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
         assertTrue(captor.getValue().getText().contains("ENVIADO"));
+    }
+
+    @Test
+    @DisplayName("No debería propagar la excepción si el envío del email falla")
+    void testNoPropagaExcepcionSiFallaElEnvio() {
+        Usuario usuario = Usuario.builder().nombre("Juan").email("juan@test.com").build();
+        doThrow(new MailSendException("smtp caído")).when(mailSender).send(any(SimpleMailMessage.class));
+
+        assertDoesNotThrow(() -> emailService.enviarConfirmacionCuenta(usuario));
     }
 }
