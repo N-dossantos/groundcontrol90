@@ -70,6 +70,30 @@ public class PagoController {
     }
 
     /**
+     * Estado del pago de un pedido. Lo consulta el frontend por polling cuando el
+     * comprador vuelve del checkout, porque el webhook puede llegar unos segundos
+     * después del redirect.
+     */
+    @GetMapping("/pedidos/{pedidoId}/estado")
+    public ResponseEntity<Map<String, String>> obtenerEstado(@PathVariable Long pedidoId,
+                                                             @AuthenticationPrincipal Usuario usuario) {
+        Pedido pedido = pedidoService.obtenerPedidoPorId(pedidoId)
+                .orElseThrow(() -> new PedidoNotFoundException(pedidoId));
+
+        if (!pedido.getUsuario().getId().equals(usuario.getId())) {
+            throw new ForbiddenException("No tenés permiso sobre este pedido");
+        }
+
+        Pago pago = pagoRepository.findTopByPedidoIdOrderByCreatedAtDesc(pedidoId)
+                .orElseThrow(() -> new IllegalStateException("No hay pago registrado para este pedido"));
+
+        return ResponseEntity.ok(Map.of(
+                "estadoPago", pago.getEstado().name(),
+                "estadoPedido", pedido.getEstado().name()
+        ));
+    }
+
+    /**
      * Notificación de Mercado Pago sobre el estado de un pago.
      *
      * Es la única fuente de verdad del cobro: el redirect del comprador no sirve como
