@@ -57,4 +57,34 @@ class AuthControllerValidationTest {
                         .content(body))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    @DisplayName("Debería rechazar una contraseña de menos de 8 caracteres")
+    void testRegister_PasswordCorta_Rechazado() throws Exception {
+        String body = """
+                {"username":"corto","email":"corto@test.com","password":"abc1234",
+                 "nombre":"Nuevo","apellido":"Usuario","aceptaTerminos":true}
+                """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .with(request -> { request.setRemoteAddr("203.0.113.12"); return request; })
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Debería rechazar una contraseña de la lista de las más comunes")
+    void testRegister_PasswordComun_Rechazado() throws Exception {
+        String body = """
+                {"username":"comun","email":"comun@test.com","password":"12345678",
+                 "nombre":"Nuevo","apellido":"Usuario","aceptaTerminos":true}
+                """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .with(request -> { request.setRemoteAddr("203.0.113.13"); return request; })
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
 }

@@ -23,6 +23,13 @@
         -Server
     }
 
+    # Las imágenes que suben los vendedores las sirve el backend, que es quien monta
+    # el volumen donde están. El contenedor del frontend es una imagen estática distinta
+    # y no lo ve.
+    handle /uploads/* {
+        reverse_proxy backend:8081
+    }
+
     handle /api/* {
         reverse_proxy backend:8081 {
             # Reemplaza (no agrega) X-Forwarded-For con la IP real del cliente.
@@ -33,6 +40,7 @@
     }
 
     handle {
-        reverse_proxy frontend:80
+        # 8080: el contenedor del frontend corre sin privilegios y no puede bindear el 80
+        reverse_proxy frontend:8080
     }
 }

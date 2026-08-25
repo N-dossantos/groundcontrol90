@@ -88,6 +88,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categorias/**").permitAll()
 
+                // Las imágenes de producto son públicas: las ve cualquier visitante del
+                // catálogo. Subirlas, en cambio, exige estar logueado (más abajo).
+                .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+
                 // El webhook no lleva JWT: Mercado Pago no tiene el token de ningún
                 // usuario. Su seguridad es la validación de firma HMAC en PagoController,
                 // no Spring Security. /api/pagos/config solo expone la public key.
@@ -98,6 +102,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 
                 // Endpoints que requieren autenticación
+                .requestMatchers(HttpMethod.POST, "/api/imagenes").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/productos").authenticated()
                 .requestMatchers(HttpMethod.PUT, "/api/productos/**").authenticated()
                 .requestMatchers(HttpMethod.DELETE, "/api/productos/**").authenticated()

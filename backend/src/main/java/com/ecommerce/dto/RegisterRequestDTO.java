@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 @Data
@@ -24,8 +25,13 @@ public class RegisterRequestDTO {
     @Size(max = 100, message = "El email no puede tener más de 100 caracteres")
     private String email;
     
+    // Mínimo 8: con 6 el espacio de búsqueda es chico incluso para un ataque offline
+    // sobre los hashes. El máximo alto es deliberado — no hay razón para cortar una
+    // passphrase larga, que es más segura que una corta con símbolos.
     @NotBlank(message = "La contraseña es obligatoria")
-    @Size(min = 6, max = 100, message = "La contraseña debe tener entre 6 y 100 caracteres")
+    @Size(min = 8, max = 100, message = "La contraseña debe tener entre 8 y 100 caracteres")
+    @Pattern(regexp = "^(?!(?i)(password|contrasena|contraseña|12345678|123456789|qwerty123|abc12345)$).*$",
+             message = "Esa contraseña es demasiado común, elegí otra")
     private String password;
     
     @NotBlank(message = "El nombre es obligatorio")

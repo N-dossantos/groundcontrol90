@@ -699,4 +699,30 @@ export const api = {
       throw new Error(error.message || 'Error al obtener estadísticas de usuarios')
     }
   },
+
+  /**
+   * Sube una imagen de producto y devuelve la URL con la que quedó guardada en el
+   * servidor. No usa request() porque el body es FormData: hay que dejar que el
+   * navegador ponga el Content-Type con su boundary, y un 'application/json' fijo
+   * rompería el parseo del multipart del lado del backend.
+   */
+  async uploadImage(file) {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const token = getAuthToken()
+    const response = await fetch(`${API_BASE_URL}/imagenes`, {
+      method: 'POST',
+      headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || errorData.error || 'No se pudo subir la imagen')
+    }
+
+    const { url } = await response.json()
+    return url
+  },
 }

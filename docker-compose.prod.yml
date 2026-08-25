@@ -37,6 +37,13 @@ services:
     # Sin ports: solo accesible dentro de ecommerce-network, detrás del proxy
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      # verifyServerCertificate=false es una decisión consciente, no un descuido: MySQL
+      # genera un certificado autofirmado propio al inicializarse y no hay una CA que lo
+      # valide. La conexión igual va cifrada (useSSL+requireSSL) y viaja únicamente por
+      # ecommerce-network, una red interna de Docker sin puerto publicado (ver mysql-db).
+      # Para validar de verdad habría que emitir un certificado propio y montar la CA en
+      # el contenedor del backend; el riesgo que cubriría es un MITM dentro de la red
+      # interna del host, que implica que el host ya está comprometido.
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/${MYSQL_DATABASE:?Falta MYSQL_DATABASE en el .env}?useSSL=true&requireSSL=true&verifyServerCertificate=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME:?Falta SPRING_DATASOURCE_USERNAME en el .env}
       - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD:?Falta SPRING_DATASOURCE_PASSWORD en el .env}
@@ -55,6 +62,12 @@ services:
       - SMTP_PASSWORD=${SMTP_PASSWORD:?Falta SMTP_PASSWORD en el .env}
       - MAIL_FROM=${MAIL_FROM:?Falta MAIL_FROM en el .env}
       - SERVER_PORT=8081
+      - UPLOADS_DIR=/app/uploads
+    volumes:
+      # Las imágenes que suben los vendedores viven acá. Sin volumen, cada
+      # `docker compose pull && up -d` se llevaría puesto el catálogo entero de
+      # imágenes junto con el contenedor viejo.
+      - uploads_data:/app/uploads
     depends_on:
       mysql-db:
         condition: service_healthy
@@ -83,7 +96,7 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -124,6 +137,8 @@ networks:
 # ========================================
 volumes:
   mysql_data:
+    driver: local
+  uploads_data:
     driver: local
   caddy_data:
     driver: local
