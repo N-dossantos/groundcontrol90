@@ -1,10 +1,13 @@
 name: Backend CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+  # Invocable desde otros workflows: build-and-push.yml lo usa como gate antes de
+  # publicar las imágenes. No se dispara con `push` a main para no correr la suite
+  # dos veces sobre el mismo commit — en main la corre build-and-push a través de
+  # este workflow_call, y su resultado es el que bloquea la publicación.
+  workflow_call:
 
 jobs:
   test:
