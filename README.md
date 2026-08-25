@@ -19,9 +19,19 @@ secretos de desarrollo y datos de ejemplo.
 - Frontend: http://localhost
 - Backend API: http://localhost:8081/api
 
-> Para ejercitar el flujo de pago hacen falta credenciales de **test** de Mercado Pago
-> en el entorno (`MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_PUBLIC_KEY`,
-> `MERCADOPAGO_WEBHOOK_SECRET`). Sin ellas el backend no arranca: es deliberado.
+> **Requiere credenciales de test de Mercado Pago.** Se generan gratis con una cuenta de
+> prueba en el [panel de desarrolladores](https://www.mercadopago.com.ar/developers/panel/app).
+> Ponelas en un `.env` en la raíz o exportalas antes de levantar:
+>
+> ```bash
+> MERCADOPAGO_ACCESS_TOKEN=TEST-...
+> MERCADOPAGO_PUBLIC_KEY=TEST-...
+> MERCADOPAGO_WEBHOOK_SECRET=...
+> ```
+>
+> Sin ellas el compose corta con el nombre de la variable que falta. Es deliberado: el
+> backend no levanta sin poder cobrar, así nadie prueba el stack completo creyendo que
+> el flujo de pago funciona.
 
 #### Opción B: producción (imágenes publicadas por CI)
 ```bash

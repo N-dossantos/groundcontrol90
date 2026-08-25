@@ -45,6 +45,26 @@ services:
       - UPLOADS_DIR=/app/uploads
       # CORS: permitir requests desde el frontend
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost,http://localhost:5173}
+      # Mercado Pago: credenciales de TEST, se generan gratis en
+      # https://www.mercadopago.com.ar/developers/panel/app (cuenta de prueba).
+      # MercadoPagoConfiguration corta el arranque si faltan — es deliberado: nadie
+      # debería levantar el stack completo sin poder ejercitar el flujo de pago. El `:?`
+      # hace que el error salga acá, con el nombre de la variable, en vez de dejar al
+      # backend reiniciando en loop.
+      - MERCADOPAGO_ACCESS_TOKEN=${MERCADOPAGO_ACCESS_TOKEN:?Falta MERCADOPAGO_ACCESS_TOKEN (credenciales de TEST de Mercado Pago)}
+      - MERCADOPAGO_PUBLIC_KEY=${MERCADOPAGO_PUBLIC_KEY:?Falta MERCADOPAGO_PUBLIC_KEY (credenciales de TEST de Mercado Pago)}
+      - MERCADOPAGO_WEBHOOK_SECRET=${MERCADOPAGO_WEBHOOK_SECRET:?Falta MERCADOPAGO_WEBHOOK_SECRET (credenciales de TEST de Mercado Pago)}
+      # BACKEND_URL tiene que ser pública (ej. un túnel ngrok) para que Mercado Pago
+      # pueda alcanzar el webhook desde afuera; localhost no le sirve.
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
+      - BACKEND_URL=${BACKEND_URL:-http://localhost:8081}
+      # SMTP opcional: sin configurar, el envío de mails falla en silencio
+      # (EmailService.enviarSeguro lo atrapa) pero el backend arranca igual.
+      - SMTP_HOST=${SMTP_HOST:-localhost}
+      - SMTP_PORT=${SMTP_PORT:-1025}
+      - SMTP_USERNAME=${SMTP_USERNAME:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - MAIL_FROM=${MAIL_FROM:-no-reply@localhost}
     volumes:
       # Imágenes subidas por los vendedores; sobreviven al rebuild del contenedor
       - uploads_data:/app/uploads
