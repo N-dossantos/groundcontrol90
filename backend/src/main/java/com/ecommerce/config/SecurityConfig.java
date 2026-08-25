@@ -101,9 +101,13 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/productos").authenticated()
                 .requestMatchers(HttpMethod.PUT, "/api/productos/**").authenticated()
                 .requestMatchers(HttpMethod.DELETE, "/api/productos/**").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/categorias").authenticated()
-                .requestMatchers(HttpMethod.PUT, "/api/categorias/**").authenticated()
-                .requestMatchers(HttpMethod.DELETE, "/api/categorias/**").authenticated()
+                // Las categorías son taxonomía global de la tienda, no algo por vendedor:
+                // con .authenticated() cualquier usuario registrado podía renombrar o
+                // borrar las categorías de todo el catálogo. Doble capa con el
+                // @PreAuthorize de CategoriaController, igual que AdminController.
+                .requestMatchers(HttpMethod.POST, "/api/categorias").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/categorias/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/categorias/**").hasRole("ADMIN")
                 
                 // Cualquier otra petición requiere autenticación
                 .anyRequest().authenticated()

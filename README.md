@@ -42,7 +42,13 @@ npm run start
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:8081/api
 
-### Credenciales de Prueba:
+### Credenciales de desarrollo (perfil `dev` únicamente):
+
+> ⚠️ Estas cuentas las crea `DataInitializer`, que está anotado con `@Profile("dev")` y
+> **sólo corre en desarrollo**. En producción la base arranca vacía y el primer admin se
+> crea a mano (ver [Primer admin en producción](#9-primer-admin)). Nunca uses estas
+> contraseñas en un servidor real.
+
 - **Admin**: `admin@test.com` / `admin123`
 - **Usuario**: `user1@test.com` / `user123`
 - **Usuario**: `test@test.com` / `test123`

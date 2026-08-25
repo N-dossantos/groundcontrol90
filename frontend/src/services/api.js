@@ -1,7 +1,9 @@
 import { ERROR_MESSAGES, TOKEN_PREFIX } from "../constants"
 
-// Base URL for Spring Boot Backend
-const API_BASE_URL = "http://localhost:8081/api"
+// El frontend se sirve detrás del mismo dominio que la API (Caddy rutea /api/* al
+// backend), así que la ruta relativa funciona igual en dev y en prod. Una URL
+// absoluta con localhost apuntaría a la máquina del visitante, no al servidor.
+const API_BASE_URL = "/api"
 
 // Helper function to get JWT token from storage
 const getAuthToken = () => {
@@ -33,7 +35,7 @@ const request = async (endpoint, options = {}) => {
     return await response.json()
   } catch (error) {
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      throw new Error('No se puede conectar con el servidor. Asegúrate de que el backend Spring Boot esté ejecutándose en http://localhost:8081')
+      throw new Error('No se puede conectar con el servidor. Intentá de nuevo en unos minutos.')
     }
     throw error
   }

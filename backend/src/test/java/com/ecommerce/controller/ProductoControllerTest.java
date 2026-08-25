@@ -150,30 +150,30 @@ class ProductoControllerTest {
                 .variantes(List.of())
                 .build();
 
-        when(productoService.actualizarProducto(eq(1L), eq(productoActualizado), any()))
+        when(productoService.actualizarProducto(eq(1L), eq(productoActualizado), any(), eq(usuario)))
                 .thenReturn(Optional.of(productoActualizado));
 
         // Act
-        ResponseEntity<ProductoDTO> respuesta = productoController.actualizarProducto(1L, request);
+        ResponseEntity<ProductoDTO> respuesta = productoController.actualizarProducto(1L, request, usuario);
 
         // Assert
         assertEquals(HttpStatus.OK, respuesta.getStatusCode());
         assertNotNull(respuesta.getBody());
-        verify(productoService, times(1)).actualizarProducto(eq(1L), eq(productoActualizado), any());
+        verify(productoService, times(1)).actualizarProducto(eq(1L), eq(productoActualizado), any(), eq(usuario));
     }
 
     @Test
     @DisplayName("Debería eliminar un producto")
     void testEliminarProducto() {
         // Arrange
-        when(productoService.eliminarProducto(1L)).thenReturn(true);
+        when(productoService.eliminarProducto(1L, usuario)).thenReturn(true);
 
         // Act
-        ResponseEntity<Void> respuesta = productoController.eliminarProducto(1L);
+        ResponseEntity<Void> respuesta = productoController.eliminarProducto(1L, usuario);
 
         // Assert
         assertEquals(HttpStatus.NO_CONTENT, respuesta.getStatusCode());
-        verify(productoService, times(1)).eliminarProducto(1L);
+        verify(productoService, times(1)).eliminarProducto(1L, usuario);
     }
 
     @Test
