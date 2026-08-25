@@ -1,7 +1,9 @@
 import { ERROR_MESSAGES, TOKEN_PREFIX } from "../constants"
 
-// Base URL for Spring Boot Backend
-const API_BASE_URL = "http://localhost:8081/api"
+// El frontend se sirve detrás del mismo dominio que la API (Caddy rutea /api/* al
+// backend), así que la ruta relativa funciona igual en dev y en prod. Una URL
+// absoluta con localhost apuntaría a la máquina del visitante, no al servidor.
+const API_BASE_URL = "/api"
 
 // Helper function to get JWT token from storage
 const getAuthToken = () => {
@@ -33,7 +35,7 @@ const request = async (endpoint, options = {}) => {
     return await response.json()
   } catch (error) {
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      throw new Error('No se puede conectar con el servidor. Asegúrate de que el backend Spring Boot esté ejecutándose en http://localhost:8081')
+      throw new Error('No se puede conectar con el servidor. Intentá de nuevo en unos minutos.')
     }
     throw error
   }
@@ -696,5 +698,31 @@ export const api = {
     } catch (error) {
       throw new Error(error.message || 'Error al obtener estadísticas de usuarios')
     }
+  },
+
+  /**
+   * Sube una imagen de producto y devuelve la URL con la que quedó guardada en el
+   * servidor. No usa request() porque el body es FormData: hay que dejar que el
+   * navegador ponga el Content-Type con su boundary, y un 'application/json' fijo
+   * rompería el parseo del multipart del lado del backend.
+   */
+  async uploadImage(file) {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const token = getAuthToken()
+    const response = await fetch(`${API_BASE_URL}/imagenes`, {
+      method: 'POST',
+      headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || errorData.error || 'No se pudo subir la imagen')
+    }
+
+    const { url } = await response.json()
+    return url
   },
 }

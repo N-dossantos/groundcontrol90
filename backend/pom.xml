@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.0</version>
+        <version>3.2.12</version>
         <relativePath/>
     </parent>
     <groupId>com.ecommerce</groupId>
@@ -15,15 +15,17 @@
     <description>Backend para e-commerce con Spring Boot</description>
     <properties>
         <java.version>17</java.version>
-        <lombok.version>edge-SNAPSHOT</lombok.version>
+        <!-- Pineada a una versión publicada en Maven Central, no a edge-SNAPSHOT.
+             El BOM de Spring Boot 3.2.12 trae 1.18.36, que no entiende los JDK
+             más nuevos: el procesador de anotaciones corre dentro del JDK que
+             ejecuta Maven (25 en las máquinas de desarrollo acá), no en el
+             release 17 al que se compila, y revienta con NoSuchFieldError.
+             Un SNAPSHOT servido fuera de Maven Central se re-resolvía en cada
+             build de CI y de docker build: el mismo commit podía producir
+             binarios distintos. Esta versión es fija y verificable. -->
+        <lombok.version>1.18.46</lombok.version>
     </properties>
-    
-    <repositories>
-        <repository>
-            <id>projectlombok.org</id>
-            <url>https://projectlombok.org/edge-releases</url>
-        </repository>
-    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -126,6 +128,9 @@
                     <encoding>UTF-8</encoding>
                     <fork>true</fork>
                     <annotationProcessorPaths>
+                        <!-- La versión va explícita: maven-compiler-plugin no toma la del
+                             dependencyManagement para annotationProcessorPaths. Ver la
+                             property lombok.version arriba. -->
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>

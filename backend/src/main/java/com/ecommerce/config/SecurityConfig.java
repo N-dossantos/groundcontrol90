@@ -88,6 +88,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categorias/**").permitAll()
 
+                // Las imágenes de producto son públicas: las ve cualquier visitante del
+                // catálogo. Subirlas, en cambio, exige estar logueado (más abajo).
+                .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+
                 // El webhook no lleva JWT: Mercado Pago no tiene el token de ningún
                 // usuario. Su seguridad es la validación de firma HMAC en PagoController,
                 // no Spring Security. /api/pagos/config solo expone la public key.
@@ -98,12 +102,17 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 
                 // Endpoints que requieren autenticación
+                .requestMatchers(HttpMethod.POST, "/api/imagenes").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/productos").authenticated()
                 .requestMatchers(HttpMethod.PUT, "/api/productos/**").authenticated()
                 .requestMatchers(HttpMethod.DELETE, "/api/productos/**").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/categorias").authenticated()
-                .requestMatchers(HttpMethod.PUT, "/api/categorias/**").authenticated()
-                .requestMatchers(HttpMethod.DELETE, "/api/categorias/**").authenticated()
+                // Las categorías son taxonomía global de la tienda, no algo por vendedor:
+                // con .authenticated() cualquier usuario registrado podía renombrar o
+                // borrar las categorías de todo el catálogo. Doble capa con el
+                // @PreAuthorize de CategoriaController, igual que AdminController.
+                .requestMatchers(HttpMethod.POST, "/api/categorias").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/categorias/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/categorias/**").hasRole("ADMIN")
                 
                 // Cualquier otra petición requiere autenticación
                 .anyRequest().authenticated()

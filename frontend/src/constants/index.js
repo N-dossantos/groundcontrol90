@@ -1,32 +1,5 @@
-// API Constants
-export const API_BASE_URL = "http://localhost:8081/api";
-
-// User Roles
-export const USER_ROLES = {
-  USER: "user",
-  ADMIN: "admin",
-};
-
-// Default User IDs
-export const DEFAULT_USER_IDS = {
-  ADMIN: 1,
-  USER1: 2,
-};
-
-// Category IDs
-export const CATEGORY_IDS = {
-  ELECTRONICS: 1,
-  CLOTHING: 2,
-  HOME: 3,
-  SPORTS: 4,
-  BOOKS: 5,
-};
-
-// Product Defaults
-export const PRODUCT_DEFAULTS = {
-  MIN_STOCK: 0,
-  MIN_PRICE: 0,
-};
+// La base URL de la API vive en services/api.js como ruta relativa. No se duplica
+// acá para no tener dos fuentes de verdad que puedan divergir.
 
 // Error Messages
 export const ERROR_MESSAGES = {

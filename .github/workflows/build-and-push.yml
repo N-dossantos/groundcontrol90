@@ -8,7 +8,14 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  # Gate: sin esto, backend-ci.yml y este workflow corrían en paralelo sobre el mismo
+  # push, así que un commit que rompía los tests igual publicaba :latest en ghcr.io y
+  # el `docker compose pull` del VPS se lo bajaba.
+  test:
+    uses: ./.github/workflows/backend-ci.yml
+
   build-and-push:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read

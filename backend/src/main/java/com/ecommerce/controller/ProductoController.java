@@ -71,9 +71,10 @@ public class ProductoController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<ProductoDTO> actualizarProducto(@PathVariable Long id,
-                                                          @RequestBody ProductoRequestDTO request) {
+                                                          @RequestBody ProductoRequestDTO request,
+                                                          @AuthenticationPrincipal Usuario usuario) {
         Optional<Producto> productoActualizado = productoService.actualizarProducto(
-                id, request.getProducto(), request.getVariantes());
+                id, request.getProducto(), request.getVariantes(), usuario);
         return productoActualizado.map(p -> ResponseEntity.ok(new ProductoDTO(p)))
                                 .orElseThrow(() -> new ProductoNotFoundException(id));
     }
@@ -83,8 +84,9 @@ public class ProductoController {
      * Elimina un producto por su ID
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarProducto(@PathVariable Long id) {
-        boolean eliminado = productoService.eliminarProducto(id);
+    public ResponseEntity<Void> eliminarProducto(@PathVariable Long id,
+                                                 @AuthenticationPrincipal Usuario usuario) {
+        boolean eliminado = productoService.eliminarProducto(id, usuario);
         if (!eliminado) {
             throw new ProductoNotFoundException(id);
         }

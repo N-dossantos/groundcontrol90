@@ -1,21 +1,54 @@
 import { useState } from "react"
-import { Upload, X, ImageIcon } from "lucide-react"
+import { Upload, X, ImageIcon, Loader2 } from "lucide-react"
+import { api } from "../services/api"
+
+// Los mismos formatos que acepta AlmacenamientoService en el backend. Se validan acá
+// también para dar el error al instante, pero la validación que cuenta es la del
+// servidor, que mira los magic bytes y no el tipo que declara el navegador.
+const TIPOS_ACEPTADOS = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+const TAMANIO_MAXIMO = 5 * 1024 * 1024
+
 const ImageUploader = ({ images = [], onChange, maxImages = 5 }) => {
   const [dragActive, setDragActive] = useState(false)
-  const handleFiles = (files) => {
-    const fileArray = Array.from(files)
-    const validFiles = fileArray.filter((file) => file.type.startsWith("image/"))
-    if (validFiles.length === 0) {
-      return
+  const [subiendo, setSubiendo] = useState(false)
+  const [error, setError] = useState("")
+
+  // Sube los archivos al backend y guarda las URLs que devuelve.
+  // Antes esto hacía URL.createObjectURL(file), que produce una URL blob: válida sólo
+  // en la pestaña que la creó: se persistía en la base y quedaba rota apenas el
+  // usuario recargaba o abría el producto desde otro dispositivo.
+  const handleFiles = async (files) => {
+    setError("")
+
+    const seleccionados = Array.from(files)
+    const cupo = maxImages - images.length
+    if (cupo <= 0) return
+
+    const validos = []
+    for (const file of seleccionados.slice(0, cupo)) {
+      if (!TIPOS_ACEPTADOS.includes(file.type)) {
+        setError(`"${file.name}" no es un formato soportado (JPG, PNG, GIF o WEBP).`)
+        continue
+      }
+      if (file.size > TAMANIO_MAXIMO) {
+        setError(`"${file.name}" supera los 5 MB.`)
+        continue
+      }
+      validos.push(file)
     }
-    // Convert files to URLs for preview
-    const newImageUrls = validFiles.map((file) => {
-      return URL.createObjectURL(file)
-    })
-    // Combine with existing images, respecting max limit
-    const allImages = [...images, ...newImageUrls].slice(0, maxImages)
-    onChange(allImages)
+    if (validos.length === 0) return
+
+    setSubiendo(true)
+    try {
+      const urls = await Promise.all(validos.map((file) => api.uploadImage(file)))
+      onChange([...images, ...urls].slice(0, maxImages))
+    } catch (e) {
+      setError(e.message || "No se pudo subir la imagen. Intentá de nuevo.")
+    } finally {
+      setSubiendo(false)
+    }
   }
+
   const handleDrag = (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -25,6 +58,7 @@ const ImageUploader = ({ images = [], onChange, maxImages = 5 }) => {
       setDragActive(false)
     }
   }
+
   const handleDrop = (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -33,16 +67,22 @@ const ImageUploader = ({ images = [], onChange, maxImages = 5 }) => {
       handleFiles(e.dataTransfer.files)
     }
   }
+
   const handleFileInput = (e) => {
     if (e.target.files && e.target.files[0]) {
       handleFiles(e.target.files)
     }
+    // Permite volver a elegir el mismo archivo después de un error
+    e.target.value = ""
   }
+
   const removeImage = (index) => {
     const newImages = images.filter((_, i) => i !== index)
     onChange(newImages)
   }
+
   const canAddMore = images.length < maxImages
+
   return (
     <div className="space-y-4">
       {/* Image Previews */}
@@ -71,12 +111,13 @@ const ImageUploader = ({ images = [], onChange, maxImages = 5 }) => {
           ))}
         </div>
       )}
+
       {/* Upload Area */}
       {canAddMore && (
         <div
           className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
             dragActive ? "border-blue-400 bg-blue-50" : "border-gray-300 hover:border-gray-400"
-          }`}
+          } ${subiendo ? "opacity-60 pointer-events-none" : ""}`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
@@ -85,32 +126,51 @@ const ImageUploader = ({ images = [], onChange, maxImages = 5 }) => {
           <input
             type="file"
             multiple
-            accept="image/*"
+            accept={TIPOS_ACEPTADOS.join(",")}
             onChange={handleFileInput}
+            disabled={subiendo}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
           <div className="text-center">
             <div className="mx-auto h-12 w-12 text-gray-400 mb-4">
-              {images.length === 0 ? <ImageIcon size={48} /> : <Upload size={48} />}
+              {subiendo ? (
+                <Loader2 size={48} className="animate-spin" />
+              ) : images.length === 0 ? (
+                <ImageIcon size={48} />
+              ) : (
+                <Upload size={48} />
+              )}
             </div>
             <div className="text-sm text-gray-600">
               <p className="font-medium">
-                {images.length === 0 ? "Arrastra imágenes aquí o haz clic para seleccionar" : "Agregar más imágenes"}
+                {subiendo
+                  ? "Subiendo..."
+                  : images.length === 0
+                    ? "Arrastra imágenes aquí o haz clic para seleccionar"
+                    : "Agregar más imágenes"}
               </p>
               <p className="mt-1">
-                PNG, JPG, GIF hasta 10MB ({images.length}/{maxImages} imágenes)
+                PNG, JPG, GIF o WEBP hasta 5MB ({images.length}/{maxImages} imágenes)
               </p>
             </div>
           </div>
         </div>
       )}
+
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
+
       {/* Instructions */}
       <div className="text-xs text-gray-500">
         <p>• La primera imagen será la imagen principal del producto</p>
         <p>• Puedes subir hasta {maxImages} imágenes</p>
-        <p>• Formatos soportados: PNG, JPG, GIF</p>
+        <p>• Formatos soportados: PNG, JPG, GIF, WEBP</p>
       </div>
     </div>
   )
 }
+
 export default ImageUploader

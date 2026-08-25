@@ -7,6 +7,7 @@ import com.ecommerce.service.CategoriaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -46,9 +47,10 @@ public class CategoriaController {
     
     /**
      * POST /api/categorias
-     * Crea una nueva categoría
+     * Crea una nueva categoría (solo ADMIN)
      */
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoriaDTO> crearCategoria(@RequestBody Categoria categoria) {
         Categoria categoriaCreada = categoriaService.saveCategoria(categoria);
         return ResponseEntity.status(HttpStatus.CREATED).body(new CategoriaDTO(categoriaCreada));
@@ -56,9 +58,10 @@ public class CategoriaController {
     
     /**
      * PUT /api/categorias/{id}
-     * Actualiza una categoría existente
+     * Actualiza una categoría existente (solo ADMIN)
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoriaDTO> actualizarCategoria(
             @PathVariable Long id, 
             @RequestBody Categoria categoria) {
@@ -74,9 +77,10 @@ public class CategoriaController {
     
     /**
      * DELETE /api/categorias/{id}
-     * Elimina una categoría por su ID
+     * Elimina una categoría por su ID (solo ADMIN)
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> eliminarCategoria(@PathVariable Long id) {
         Optional<Categoria> categoria = categoriaService.getCategoriaById(id);
         if (categoria.isEmpty()) {

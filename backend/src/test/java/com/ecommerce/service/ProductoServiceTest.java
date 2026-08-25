@@ -229,7 +229,7 @@ class ProductoServiceTest {
         });
 
         // Act
-        Optional<Producto> resultado = productoService.actualizarProducto(1L, productoActualizado, List.of());
+        Optional<Producto> resultado = productoService.actualizarProducto(1L, productoActualizado, List.of(), usuario);
 
         // Assert
         assertTrue(resultado.isPresent());
@@ -254,7 +254,7 @@ class ProductoServiceTest {
         when(productoRepository.findById(999L)).thenReturn(Optional.empty());
 
         // Act
-        Optional<Producto> resultado = productoService.actualizarProducto(999L, productoActualizado, List.of());
+        Optional<Producto> resultado = productoService.actualizarProducto(999L, productoActualizado, List.of(), usuario);
 
         // Assert
         assertFalse(resultado.isPresent());
@@ -266,31 +266,31 @@ class ProductoServiceTest {
     @DisplayName("Debería eliminar un producto cuando existe")
     void testEliminarProducto_Existe() {
         // Arrange
-        when(productoRepository.existsById(1L)).thenReturn(true);
-        doNothing().when(productoRepository).deleteById(1L);
+        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        doNothing().when(productoRepository).delete(producto);
 
         // Act
-        boolean resultado = productoService.eliminarProducto(1L);
+        boolean resultado = productoService.eliminarProducto(1L, usuario);
 
         // Assert
         assertTrue(resultado);
-        verify(productoRepository, times(1)).existsById(1L);
-        verify(productoRepository, times(1)).deleteById(1L);
+        verify(productoRepository, times(1)).findById(1L);
+        verify(productoRepository, times(1)).delete(producto);
     }
 
     @Test
     @DisplayName("Debería retornar false al eliminar un producto que no existe")
     void testEliminarProducto_NoExiste() {
         // Arrange
-        when(productoRepository.existsById(999L)).thenReturn(false);
+        when(productoRepository.findById(999L)).thenReturn(Optional.empty());
 
         // Act
-        boolean resultado = productoService.eliminarProducto(999L);
+        boolean resultado = productoService.eliminarProducto(999L, usuario);
 
         // Assert
         assertFalse(resultado);
-        verify(productoRepository, times(1)).existsById(999L);
-        verify(productoRepository, never()).deleteById(anyLong());
+        verify(productoRepository, times(1)).findById(999L);
+        verify(productoRepository, never()).delete(any(Producto.class));
     }
 
     @Test

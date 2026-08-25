@@ -12,6 +12,7 @@ import com.ecommerce.repository.ProductoVarianteRepository;
 import com.ecommerce.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -19,7 +20,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Siembra datos de ejemplo (categorías, productos y usuarios de prueba) para desarrollo.
+ *
+ * Está limitado a los perfiles de desarrollo (`dev` con H2, `docker` con el MySQL del
+ * compose) a propósito: su única guarda es que la base esté vacía, que es exactamente el
+ * estado del primer arranque en producción. Sin el @Profile, la tienda real nacería con
+ * un admin de credenciales públicas y seis productos demo.
+ * En producción el esquema lo provee Flyway (db/migration/) y la base arranca sin datos:
+ * el primer admin se crea a mano (ver README, sección de deploy).
+ */
 @Component
+@Profile({"dev", "docker"})
 public class DataInitializer implements CommandLineRunner {
 
     @Autowired

@@ -4,7 +4,9 @@ import com.ecommerce.dto.ProductoFiltroDTO;
 import com.ecommerce.dto.ProductoVarianteDTO;
 import com.ecommerce.entity.Producto;
 import com.ecommerce.entity.ProductoVariante;
+import com.ecommerce.entity.Role;
 import com.ecommerce.entity.Usuario;
+import com.ecommerce.exception.ForbiddenException;
 import com.ecommerce.exception.UsuarioNotFoundException;
 import com.ecommerce.exception.ValidationException;
 import com.ecommerce.repository.DetallePedidoRepository;
@@ -76,11 +78,16 @@ public class ProductoService {
      * Actualizar producto existente y su lista de variantes
      * Se modifica la entidad ya persistida en vez de guardar la que llega en el body,
      * porque el body no trae el vendedor propietario ni la fecha de creación.
+     *
+     * `usuario` es quien hace el pedido: sin verificar su propiedad sobre el producto,
+     * cualquier cuenta registrada podría reescribir el precio o el stock de otro vendedor.
      */
     public Optional<Producto> actualizarProducto(Long id, Producto productoActualizado,
-                                                 List<ProductoVarianteDTO> variantes) {
+                                                 List<ProductoVarianteDTO> variantes,
+                                                 Usuario usuario) {
         return productoRepository.findById(id)
                 .map(productoExistente -> {
+                    verificarPropiedad(productoExistente, usuario);
                     productoExistente.setName(productoActualizado.getName());
                     productoExistente.setDescription(productoActualizado.getDescription());
                     productoExistente.setPrice(productoActualizado.getPrice());
@@ -157,14 +164,35 @@ public class ProductoService {
     }
 
     /**
-     * Eliminar producto
+     * Eliminar producto. Sólo puede borrarlo su vendedor propietario, o un admin.
      */
-    public boolean eliminarProducto(Long id) {
-        if (productoRepository.existsById(id)) {
-            productoRepository.deleteById(id);
-            return true;
+    public boolean eliminarProducto(Long id, Usuario usuario) {
+        return productoRepository.findById(id)
+                .map(producto -> {
+                    verificarPropiedad(producto, usuario);
+                    productoRepository.delete(producto);
+                    return true;
+                })
+                .orElse(false);
+    }
+
+    /**
+     * El dueño del producto o un admin. Sin este chequeo cualquier cuenta registrada
+     * puede reescribir el precio o borrar el producto de otro vendedor: siendo un
+     * marketplace multi-vendedor, `authenticated()` en SecurityConfig no alcanza porque
+     * todos los vendedores tienen el mismo rol.
+     */
+    private void verificarPropiedad(Producto producto, Usuario usuario) {
+        if (usuario == null) {
+            throw new ForbiddenException("No tenés permiso sobre este producto");
         }
-        return false;
+        if (usuario.getRole() == Role.ADMIN) {
+            return;
+        }
+        Usuario dueño = producto.getOwnerUser();
+        if (dueño == null || !dueño.getId().equals(usuario.getId())) {
+            throw new ForbiddenException("No tenés permiso sobre este producto");
+        }
     }
 
     /**

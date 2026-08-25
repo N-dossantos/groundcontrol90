@@ -1,4 +1,35 @@
 {$DOMAIN} {
+    # Headers de seguridad. Van acá y no sólo en nginx porque Caddy es el único punto
+    # por el que pasa todo el tráfico: el frontend estático y también /api/*.
+    header {
+        # HSTS: el navegador recuerda por un año que este dominio es sólo HTTPS, así
+        # que ni la primera request de una sesión posterior sale en claro.
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+        # Sin esto el navegador puede adivinar el tipo de un archivo subido e
+        # interpretarlo como HTML o JS.
+        X-Content-Type-Options "nosniff"
+
+        # No filtrar la URL completa (con ids de pedido o de producto) a sitios externos.
+        Referrer-Policy "strict-origin-when-cross-origin"
+
+        # img-src permite cualquier https: las imágenes de producto son URLs externas
+        # (Unsplash en los datos de ejemplo) y las que sube el vendedor viven en /uploads.
+        # style-src necesita 'unsafe-inline' por los estilos inline de React.
+        # frame-ancestors 'none' evita el clickjacking sobre el checkout.
+        Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
+        # No anunciar el servidor ni su versión.
+        -Server
+    }
+
+    # Las imágenes que suben los vendedores las sirve el backend, que es quien monta
+    # el volumen donde están. El contenedor del frontend es una imagen estática distinta
+    # y no lo ve.
+    handle /uploads/* {
+        reverse_proxy backend:8081
+    }
+
     handle /api/* {
         reverse_proxy backend:8081 {
             # Reemplaza (no agrega) X-Forwarded-For con la IP real del cliente.
@@ -9,6 +40,7 @@
     }
 
     handle {
-        reverse_proxy frontend:80
+        # 8080: el contenedor del frontend corre sin privilegios y no puede bindear el 80
+        reverse_proxy frontend:8080
     }
 }
