@@ -1,7 +1,9 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+# Sin barra inicial: con "/node_modules" el patrón queda anclado a la raíz y no cubre
+# frontend/node_modules/, así que un `git add .` subía el árbol entero de dependencias.
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -19,8 +21,9 @@
 #/tpo-commits/
 
 # production
-/build
-
+# Mismo motivo que node_modules: sin anclar, para que cubra frontend/dist/ y frontend/build/
+build/
+dist/
 
 # misc
 .DS_Store
@@ -45,5 +48,13 @@ next-env.d.ts
 
 # Maven
 backend/target/
+
+# Imágenes subidas por los vendedores en desarrollo (en producción viven en un
+# volumen de Docker, ver docker-compose.prod.yml)
+backend/uploads/
+uploads/
+
+# Herramientas de agentes: los worktrees son copias completas del repo
+.claude/
 # Superpowers SDD workspace (scratch)
 .superpowers/
