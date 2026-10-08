@@ -2,6 +2,8 @@ import { cargar, guardar } from "./store"
 import { usuarioActual } from "./sesion"
 import { DemoError, demoError, prohibido } from "./respuestas"
 import * as auth from "./handlers/auth"
+import * as productos from "./handlers/productos"
+import * as categorias from "./handlers/categorias"
 
 // Endpoints que simula la demo: sólo los que usa alguna pantalla. `acceso` replica las
 // reglas de SecurityConfig y los @PreAuthorize: "publico" no mira el token, "usuario"
@@ -11,6 +13,16 @@ const RUTAS = [
   ["POST", "/auth/login", "publico", auth.login],
   ["POST", "/auth/register", "publico", auth.registrar],
   ["POST", "/auth/validate", "publico", auth.validar],
+
+  ["GET", "/productos", "publico", productos.listar],
+  ["GET", "/productos/buscar", "publico", productos.buscar],
+  ["GET", "/productos/categoria/:categoryId", "publico", productos.porCategoria],
+  ["GET", "/productos/:id", "publico", productos.obtener],
+  ["POST", "/productos", "usuario", productos.crear],
+  ["PUT", "/productos/:id", "usuario", productos.actualizar],
+  ["DELETE", "/productos/:id", "usuario", productos.eliminar],
+
+  ["GET", "/categorias", "publico", categorias.listar],
 ]
 
 const TABLA = RUTAS.map(([metodo, patron, acceso, handler]) => ({

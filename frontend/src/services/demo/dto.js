@@ -11,3 +11,39 @@ export const usuarioDTO = (u) => ({
   createdAt: u.createdAt,
   updatedAt: u.updatedAt,
 })
+
+export const categoriaDTO = (c) => ({
+  id: c.id,
+  nombre: c.nombre,
+  descripcion: c.descripcion,
+  createdAt: c.createdAt,
+  updatedAt: c.updatedAt,
+})
+
+// stockTotal es derivado, igual que en ProductoDTO: el stock vive en cada talle.
+export const productoDTO = (state, p) => {
+  const variantes = state.variantes
+    .filter((v) => v.productoId === p.id)
+    .map(({ id, talle, stock, sku }) => ({ id, talle, stock, sku }))
+  const categoria = state.categorias.find((c) => c.id === p.categoriaId)
+  const owner = state.usuarios.find((u) => u.id === p.ownerUserId)
+  return {
+    id: p.id,
+    name: p.name,
+    description: p.description,
+    price: p.price,
+    club: p.club,
+    liga: p.liga,
+    temporada: p.temporada,
+    tipo: p.tipo,
+    variantes,
+    stockTotal: variantes.reduce((suma, v) => suma + v.stock, 0),
+    images: p.images,
+    categoriaId: categoria ? categoria.id : null,
+    categoriaNombre: categoria ? categoria.nombre : null,
+    ownerUserId: p.ownerUserId,
+    ownerUserNombre: owner ? owner.nombre : null,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+  }
+}
