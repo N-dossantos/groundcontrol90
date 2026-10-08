@@ -4,6 +4,8 @@ import { DemoError, demoError, prohibido } from "./respuestas"
 import * as auth from "./handlers/auth"
 import * as productos from "./handlers/productos"
 import * as categorias from "./handlers/categorias"
+import * as pedidos from "./handlers/pedidos"
+import * as pagos from "./handlers/pagos"
 
 // Endpoints que simula la demo: sólo los que usa alguna pantalla. `acceso` replica las
 // reglas de SecurityConfig y los @PreAuthorize: "publico" no mira el token, "usuario"
@@ -23,6 +25,14 @@ const RUTAS = [
   ["DELETE", "/productos/:id", "usuario", productos.eliminar],
 
   ["GET", "/categorias", "publico", categorias.listar],
+
+  ["GET", "/pedidos/mis-pedidos", "usuario", pedidos.misPedidos],
+  ["GET", "/pedidos/:id", "usuario", pedidos.obtener],
+  ["POST", "/pedidos", "usuario", pedidos.crear],
+  ["PUT", "/pedidos/:id/cancelar", "usuario", pedidos.cancelar],
+
+  ["POST", "/pagos/pedidos/:pedidoId/preferencia", "usuario", pagos.crearPreferencia],
+  ["GET", "/pagos/pedidos/:pedidoId/estado", "usuario", pagos.estado],
 ]
 
 const TABLA = RUTAS.map(([metodo, patron, acceso, handler]) => ({

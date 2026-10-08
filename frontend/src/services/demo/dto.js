@@ -47,3 +47,41 @@ export const productoDTO = (state, p) => {
     updatedAt: p.updatedAt,
   }
 }
+
+const nombreCompleto = (u) => (u ? `${u.nombre} ${u.apellido}` : null)
+
+export const detalleDTO = (state, d) => {
+  const vendedor = state.usuarios.find((u) => u.id === d.vendedorId)
+  return {
+    id: d.id,
+    productoId: d.productoId,
+    productoVarianteId: d.productoVarianteId,
+    talle: d.talle,
+    productoNombre: d.productoNombre,
+    productoImagen: d.productoImagen,
+    cantidad: d.cantidad,
+    precioUnitario: d.precioUnitario,
+    subtotal: d.precioUnitario * d.cantidad,
+    vendedorId: vendedor ? vendedor.id : null,
+    vendedorNombre: nombreCompleto(vendedor),
+    vendedorEmail: vendedor ? vendedor.email : null,
+    estadoItem: d.estadoItem,
+  }
+}
+
+export const pedidoDTO = (state, p) => {
+  const usuario = state.usuarios.find((u) => u.id === p.usuarioId)
+  return {
+    id: p.id,
+    usuarioId: usuario ? usuario.id : null,
+    usuarioNombre: usuario ? usuario.nombre : null,
+    usuarioEmail: usuario ? usuario.email : null,
+    items: state.detalles.filter((d) => d.pedidoId === p.id).map((d) => detalleDTO(state, d)),
+    total: p.total,
+    estado: p.estado,
+    direccionEnvio: p.direccionEnvio,
+    notas: p.notas,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+  }
+}
