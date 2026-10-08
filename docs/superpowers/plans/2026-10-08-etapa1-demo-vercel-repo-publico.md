@@ -3316,3 +3316,34 @@ Vercel redespliega solo con el push. Run: `curl -sI https://<proyecto>.vercel.ap
 - [ ] **Step 6: Registrar el resultado**
 
 Agregar al final de este plan una sección `## ✅ Resultado de la ejecución (<fecha>)`, con el mismo formato que la de `fase5.md`: conteo de tests (backend y frontend), tabla de verificaciones corridas con su resultado, desvíos y lo que quede pendiente (por ejemplo, la CSP del VPS, que sigue siendo de la etapa 2). Commit `docs: registrar el resultado de la ejecución de la etapa 1` y push.
+
+---
+
+## ✅ Resultado de la ejecución (2026-10-08)
+
+Ejecutado inline (executing-plans), sin subagentes. Repo: https://github.com/N-dossantos/groundcontrol90 — Demo: https://groundcontrol-zeta.vercel.app
+
+**Tests:** frontend 0 → 84 (Vitest), backend 156, 0 failures (local y en GitHub Actions).
+
+| Verificación | Resultado |
+|---|---|
+| §7.1 build sin `VITE_DEMO_MODE`: `dist/` sin `BOCA-2026-TIT`, `Modo demo`, `demo-token-`, `Cuentas de prueba`, `demo-state-v1` | ✅ |
+| §7.2 build con la variable: aparecen (`index-*.js` y chunk `router-*.js`) | ✅ |
+| §7.3 `npm run lint` | ✅ 0 errors (warnings: ruido `no-unused-vars` de JSX) |
+| §7.5 `/product/3` directo en Vercel: 200 + `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` | ✅ |
+| Deploy de Vercel construido con la demo (mismo hash `index-29750abe.js` que el build local con la variable) | ✅ |
+| §7.4 recorrido: banner y cuentas en `/login`; producto → carrito → checkout → `/checkout/resultado?pedidoId=4` sigue logueado y "¡Pago aprobado!"; F5 en `/orders/4`; cancelar pedido 3 (stock 15 → 17); borrar producto propio sin error (204); `/sales` → Preparando; `/admin` y `/admin/reportes` ($168.000, 3 pedidos); "Reiniciar demo" | ✅ (ver desvíos) |
+| CI en GitHub: Backend CI, Frontend CI y build-and-push con imágenes en ghcr.io | ✅ (al segundo intento, ver desvíos) |
+| Sólo `main` publicado (`git ls-remote --heads origin`) | ✅ |
+
+**Desvíos:**
+
+- El primer push hizo fallar el Backend CI (18 errores en `setUp`, `NULL not allowed for column "PRODUCTO_ID"`). Causa: `PedidoConcurrenciaTest` y `EmailServiceSinSesionTest` commitean datos y sólo limpiaban antes de cada test; con el contexto de los controllers en caché, su `usuarioRepository.deleteAll()` fallaba según el orden de las clases (en macOS no se daba). Arreglado en `009e370` con un `@AfterEach`, sólo en código de test; reproducido con `-Dsurefire.runOrder=random`. El gate cumplió su función: con los tests rotos no publicó imágenes.
+- El recorrido con sesión se hizo sobre el mismo build servido en `localhost` (`vite preview`), no sobre el dominio de Vercel; sin sesión (banner, cuentas, redirección de rutas profundas) se verificó en Vercel.
+- `CLAUDE.md` queda fuera del repo por decisión del usuario.
+
+**Pendiente:**
+
+- `Login.jsx` muestra un recuadro "Credenciales de prueba" (del commit base) que no depende de `__DEMO_MODE__`: aparece también en el build de producción del VPS, donde esas cuentas no existen.
+- Lo de "Hallazgos fuera de alcance" sigue abierto (backend ignora `categoriaId`, registro desde `Login.jsx` sin `aceptaTerminos`, ramas `'404'` muertas en `api.js`).
+- La CSP y el resto del deploy real siguen siendo de la etapa 2.
