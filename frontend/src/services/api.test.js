@@ -59,3 +59,26 @@ describe("api.validateToken", () => {
     expect(config.headers.Authorization).toBe("Bearer tok")
   })
 })
+
+describe("errores 404 del backend", () => {
+  // El backend no incluye el código en el mensaje: lo que ve el usuario es su `message`.
+  it("getProduct muestra el mensaje del backend", async () => {
+    sinSesion()
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(respuesta(404, { error: "Not Found", message: "Producto con ID 999 no encontrado" })),
+    )
+
+    await expect(api.getProduct(999)).rejects.toThrow("Producto con ID 999 no encontrado")
+  })
+
+  it("getOrder muestra el mensaje del backend", async () => {
+    sinSesion()
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(respuesta(404, { error: "Not Found", message: "Pedido con ID 999 no encontrado" })),
+    )
+
+    await expect(api.getOrder(999)).rejects.toThrow("Pedido con ID 999 no encontrado")
+  })
+})

@@ -232,15 +232,8 @@ export const api = {
   },
 
   async getProduct(id) {
-    try {
-      const product = await request(`/productos/${id}`)
-      return mapProduct(product)
-    } catch (error) {
-      if (error.message.includes('404')) {
-        throw new Error(ERROR_MESSAGES.PRODUCT_NOT_FOUND)
-      }
-      throw error
-    }
+    const product = await request(`/productos/${id}`)
+    return mapProduct(product)
   },
   
   async createProduct(productData) {
@@ -253,33 +246,19 @@ export const api = {
   },
 
   async updateProduct(id, productData) {
-    try {
-      const updated = await request(`/productos/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(buildProductPayload(productData)),
-      })
+    const updated = await request(`/productos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(buildProductPayload(productData)),
+    })
 
-      return mapProduct(updated)
-    } catch (error) {
-      if (error.message.includes('404')) {
-        throw new Error(ERROR_MESSAGES.PRODUCT_NOT_FOUND)
-      }
-      throw error
-    }
+    return mapProduct(updated)
   },
   
   async deleteProduct(id) {
-    try {
-      await request(`/productos/${id}`, {
-        method: 'DELETE',
-      })
-      return true
-    } catch (error) {
-      if (error.message.includes('404')) {
-        throw new Error(ERROR_MESSAGES.PRODUCT_NOT_FOUND)
-      }
-      throw error
-    }
+    await request(`/productos/${id}`, {
+      method: 'DELETE',
+    })
+    return true
   },
   
   // Categories endpoints - REAL desde el backend
@@ -330,15 +309,7 @@ export const api = {
    * Obtener detalle de un pedido por ID
    */
   async getOrder(orderId) {
-    try {
-      const pedido = await request(`/pedidos/${orderId}`)
-      return pedido
-    } catch (error) {
-      if (error.message.includes('404')) {
-        throw new Error('Pedido no encontrado')
-      }
-      throw error
-    }
+    return request(`/pedidos/${orderId}`)
   },
   
   /**
