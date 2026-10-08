@@ -317,24 +317,6 @@ const Login = () => {
               )}
             </button>
           </div>
-
-          {/* Demo credentials - only show in login mode */}
-          {isLoginMode && (
-            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">Credenciales de prueba:</h3>
-              <div className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                <p>
-                  <strong>Admin:</strong> admin@test.com / admin123
-                </p>
-                <p>
-                  <strong>Usuario:</strong> user1@test.com / user123
-                </p>
-                <p>
-                  <strong>Usuario:</strong> test@test.com / test123
-                </p>
-              </div>
-            </div>
-          )}
         </form>
       </div>
     </div>

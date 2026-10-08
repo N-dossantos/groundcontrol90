@@ -3341,9 +3341,9 @@ Ejecutado inline (executing-plans), sin subagentes. Repo: https://github.com/N-d
 - El primer push hizo fallar el Backend CI (18 errores en `setUp`, `NULL not allowed for column "PRODUCTO_ID"`). Causa: `PedidoConcurrenciaTest` y `EmailServiceSinSesionTest` commitean datos y sólo limpiaban antes de cada test; con el contexto de los controllers en caché, su `usuarioRepository.deleteAll()` fallaba según el orden de las clases (en macOS no se daba). Arreglado en `009e370` con un `@AfterEach`, sólo en código de test; reproducido con `-Dsurefire.runOrder=random`. El gate cumplió su función: con los tests rotos no publicó imágenes.
 - El recorrido con sesión se hizo sobre el mismo build servido en `localhost` (`vite preview`), no sobre el dominio de Vercel; sin sesión (banner, cuentas, redirección de rutas profundas) se verificó en Vercel.
 - `CLAUDE.md` queda fuera del repo por decisión del usuario.
+- Se quitó de `Login.jsx` el recuadro "Credenciales de prueba" del commit base: no dependía de `__DEMO_MODE__` y aparecía también en el build de producción del VPS, donde esas cuentas no existen. En la demo lo reemplazan las cuentas de prueba del modo demo.
 
 **Pendiente:**
 
-- `Login.jsx` muestra un recuadro "Credenciales de prueba" (del commit base) que no depende de `__DEMO_MODE__`: aparece también en el build de producción del VPS, donde esas cuentas no existen.
 - Lo de "Hallazgos fuera de alcance" sigue abierto (backend ignora `categoriaId`, registro desde `Login.jsx` sin `aceptaTerminos`, ramas `'404'` muertas en `api.js`).
 - La CSP y el resto del deploy real siguen siendo de la etapa 2.
