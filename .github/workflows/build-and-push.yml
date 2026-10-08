@@ -14,8 +14,11 @@ jobs:
   test:
     uses: ./.github/workflows/backend-ci.yml
 
+  test-frontend:
+    uses: ./.github/workflows/frontend-ci.yml
+
   build-and-push:
-    needs: test
+    needs: [test, test-frontend]
     runs-on: ubuntu-latest
     permissions:
       contents: read

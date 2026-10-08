@@ -29,9 +29,17 @@ const request = async (endpoint, options = {}) => {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || errorData.message || `HTTP error! status: ${response.status}`)
+      // `message` trae el detalle en castellano ("Credenciales inválidas"); `error` es el
+      // título genérico del GlobalExceptionHandler ("Unauthorized"). Algunos endpoints
+      // (AdminController) sólo mandan `error`, por eso queda como segunda opción.
+      throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`)
     }
-    
+
+    // Los DELETE responden 204 sin body: response.json() fallaría sobre una operación exitosa.
+    if (response.status === 204) {
+      return null
+    }
+
     return await response.json()
   } catch (error) {
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
@@ -147,7 +155,10 @@ export const api = {
   
   async validateToken(token) {
     try {
+      // AuthController expone /auth/validate sólo como POST: con el GET por defecto de
+      // fetch la validación fallaba siempre y la sesión guardada se borraba en cada recarga.
       const response = await request('/auth/validate', {
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`
         }

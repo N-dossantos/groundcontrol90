@@ -402,9 +402,10 @@ gunzip -c ecommerce_db-20260811-030000.sql.gz | docker exec -i ecommerce-mysql m
 | Workflow | Cuándo corre | Qué hace |
 |---|---|---|
 | `.github/workflows/backend-ci.yml` | PR a `main`, y como gate de `build-and-push` | Corre la suite del backend (`mvn -B test`) |
+| `.github/workflows/frontend-ci.yml` | PR a `main`, y como gate de `build-and-push` | Corre los tests del frontend (`npm test`) y verifica que el build compile |
 | `.github/workflows/build-and-push.yml` | push a `main` | Corre los tests y, **sólo si pasan**, construye y publica las imágenes en `ghcr.io` con los tags `latest` y el SHA del commit |
 
-El `needs: test` es lo que impide que un commit con tests rotos publique `:latest` y que
+El `needs: [test, test-frontend]` es lo que impide que un commit con tests rotos publique `:latest` y que
 el `docker compose pull` del servidor se lo baje.
 
 Las imágenes se publican con el `GITHUB_TOKEN` del propio repositorio: no hay
@@ -431,6 +432,11 @@ rm -rf target/surefire-reports && mvn -B test    # 156 tests
 
 Cubre servicios, controllers, seguridad (propiedad de productos, roles, rate limiting,
 firma del webhook), subida de imágenes, concurrencia de stock y expiración de pedidos.
+
+```bash
+cd frontend
+npm test       # Vitest: api.js, sesión y el backend simulado del modo demo
+```
 
 ### Endpoints principales
 
