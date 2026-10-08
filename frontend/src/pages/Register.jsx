@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { useToast } from "../context/ToastContext"
-import { validateEmail, validatePassword, validateRequired } from "../utils/validators"
+import { validateEmail, validateNewPassword, validateRequired } from "../utils/validators"
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react"
 import TermsModal from "../components/modals/TermsModal"
 import PrivacyModal from "../components/modals/PrivacyModal"
@@ -50,8 +50,8 @@ const Register = () => {
     }
     if (!validateRequired(formData.password)) {
       newErrors.password = "La contraseña es requerida"
-    } else if (!validatePassword(formData.password)) {
-      newErrors.password = "La contraseña debe tener al menos 6 caracteres"
+    } else if (!validateNewPassword(formData.password)) {
+      newErrors.password = "La contraseña debe tener al menos 8 caracteres"
     }
     if (!validateRequired(formData.firstName)) {
       newErrors.firstName = "El nombre es requerido"
@@ -154,7 +154,7 @@ const Register = () => {
                   autoComplete="new-password"
                   required
                   className={`input pl-10 pr-10 ${errors.password ? "border-red-500 focus:ring-red-500" : ""}`}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 8 caracteres"
                   value={formData.password}
                   onChange={handleChange}
                 />

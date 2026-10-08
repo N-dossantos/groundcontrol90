@@ -5,6 +5,11 @@ export const validateEmail = (email) => {
 export const validatePassword = (password) => {
   return password && password.length >= 6
 }
+// Para contraseñas nuevas (registro): el mismo mínimo que RegisterRequest en el backend.
+// validatePassword sigue en 6 porque la usa el login, y hay cuentas con claves más cortas.
+export const validateNewPassword = (password) => {
+  return Boolean(password) && password.length >= 8
+}
 export const validateRequired = (value) => {
   return value && value.toString().trim().length > 0
 }
