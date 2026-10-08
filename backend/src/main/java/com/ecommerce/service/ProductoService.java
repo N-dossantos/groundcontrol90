@@ -2,13 +2,16 @@ package com.ecommerce.service;
 
 import com.ecommerce.dto.ProductoFiltroDTO;
 import com.ecommerce.dto.ProductoVarianteDTO;
+import com.ecommerce.entity.Categoria;
 import com.ecommerce.entity.Producto;
 import com.ecommerce.entity.ProductoVariante;
 import com.ecommerce.entity.Role;
 import com.ecommerce.entity.Usuario;
+import com.ecommerce.exception.CategoriaNotFoundException;
 import com.ecommerce.exception.ForbiddenException;
 import com.ecommerce.exception.UsuarioNotFoundException;
 import com.ecommerce.exception.ValidationException;
+import com.ecommerce.repository.CategoriaRepository;
 import com.ecommerce.repository.DetallePedidoRepository;
 import com.ecommerce.repository.ProductoRepository;
 import com.ecommerce.repository.spec.ProductoSpecifications;
@@ -36,6 +39,9 @@ public class ProductoService {
 
     @Autowired
     private UsuarioService usuarioService;
+
+    @Autowired
+    private CategoriaRepository categoriaRepository;
 
     /**
      * Obtener todos los productos
@@ -66,6 +72,7 @@ public class ProductoService {
 
         // Asignar el usuario como propietario del producto
         producto.setOwnerUser(ownerUser);
+        producto.setCategoria(categoriaDe(producto));
         producto.setCreatedAt(LocalDateTime.now());
 
         Producto guardado = productoRepository.save(producto);
@@ -96,7 +103,7 @@ public class ProductoService {
                     productoExistente.setTemporada(productoActualizado.getTemporada());
                     productoExistente.setTipo(productoActualizado.getTipo());
                     productoExistente.setImages(productoActualizado.getImages());
-                    productoExistente.setCategoria(productoActualizado.getCategoria());
+                    productoExistente.setCategoria(categoriaDe(productoActualizado));
                     productoExistente.setUpdatedAt(LocalDateTime.now());
 
                     Producto guardado = productoRepository.save(productoExistente);
@@ -104,6 +111,19 @@ public class ProductoService {
 
                     return guardado;
                 });
+    }
+
+    /**
+     * Desde la API la categoría llega como id ("categoriaId" en el JSON) y hay que resolverla;
+     * sin id, vale la que trae el producto: null si el vendedor no eligió ninguna, o la
+     * entidad que arman los llamadores internos como DataInitializer.
+     */
+    private Categoria categoriaDe(Producto datos) {
+        if (datos.getCategoriaElegidaId() == null) {
+            return datos.getCategoria();
+        }
+        return categoriaRepository.findById(datos.getCategoriaElegidaId())
+                .orElseThrow(() -> new CategoriaNotFoundException(datos.getCategoriaElegidaId()));
     }
 
     /**

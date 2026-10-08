@@ -6,7 +6,6 @@ export const ERROR_MESSAGES = {
   INVALID_CREDENTIALS: "Credenciales inválidas",
   EMAIL_EXISTS: "El email ya está registrado",
   USERNAME_EXISTS: "El nombre de usuario ya está en uso",
-  PRODUCT_NOT_FOUND: "Producto no encontrado",
   USER_NOT_FOUND: "Usuario no encontrado",
 };
 

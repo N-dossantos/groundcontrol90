@@ -3345,5 +3345,5 @@ Ejecutado inline (executing-plans), sin subagentes. Repo: https://github.com/N-d
 
 **Pendiente:**
 
-- Lo de "Hallazgos fuera de alcance" sigue abierto (backend ignora `categoriaId`, registro desde `Login.jsx` sin `aceptaTerminos`, ramas `'404'` muertas en `api.js`).
+- ~~"Hallazgos fuera de alcance"~~: resueltos después en la rama `fase6-bugs-produccion` (el backend respeta `categoriaId`; el registro va siempre por `/register`, con términos y el mínimo de 8 caracteres del backend; sin las ramas `'404'` muertas de `api.js`).
 - La CSP y el resto del deploy real siguen siendo de la etapa 2.
