@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext"
 import { useToast } from "../context/ToastContext"
 import { validateEmail, validatePassword, validateRequired } from "../utils/validators"
 import { Eye, EyeOff, Mail, Lock, User, LogIn, UserPlus } from "lucide-react"
+import DemoCuentas from "../components/demo/DemoCuentas"
 const Login = () => {
   const [isLoginMode, setIsLoginMode] = useState(true)
   const [formData, setFormData] = useState({
@@ -107,6 +108,11 @@ const Login = () => {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
             {isLoginMode ? "Iniciar Sesión" : "Crear Cuenta"}
           </h2>
+          {__DEMO_MODE__ && isLoginMode && (
+            <div className="mt-4">
+              <DemoCuentas onElegir={(email, password) => setFormData((prev) => ({ ...prev, email, password }))} />
+            </div>
+          )}
           <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-300">
             {isLoginMode ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}{" "}
             <button

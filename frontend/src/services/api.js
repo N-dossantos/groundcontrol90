@@ -731,6 +731,11 @@ export const api = {
    * rompería el parseo del multipart del lado del backend.
    */
   async uploadImage(file) {
+    if (DEMO) {
+      const { leerImagenDemo } = await import("./demo/imagenes")
+      return leerImagenDemo(file)
+    }
+
     const formData = new FormData()
     formData.append('file', file)
 

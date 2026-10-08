@@ -4,6 +4,7 @@ import { CartProvider } from "./context/CartContext"
 import AppRouter from "./router"
 import { ToastProvider } from "./context/ToastContext"
 import ErrorBoundary from "./components/ErrorBoundary"
+import DemoBanner from "./components/demo/DemoBanner"
 function App() {
   return (
     <ErrorBoundary>
@@ -11,6 +12,7 @@ function App() {
         <AuthProvider>
           <CartProvider>
             <ToastProvider>
+              {__DEMO_MODE__ && <DemoBanner />}
               <AppRouter />
             </ToastProvider>
           </CartProvider>
