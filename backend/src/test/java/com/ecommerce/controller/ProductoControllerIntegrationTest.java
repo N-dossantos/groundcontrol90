@@ -1,7 +1,9 @@
 package com.ecommerce.controller;
 
+import com.ecommerce.entity.Categoria;
 import com.ecommerce.entity.Role;
 import com.ecommerce.entity.Usuario;
+import com.ecommerce.repository.CategoriaRepository;
 import com.ecommerce.repository.PedidoRepository;
 import com.ecommerce.repository.ProductoRepository;
 import com.ecommerce.repository.UsuarioRepository;
@@ -40,11 +42,14 @@ class ProductoControllerIntegrationTest {
     @Autowired private UsuarioRepository usuarioRepository;
     @Autowired private ProductoRepository productoRepository;
     @Autowired private PedidoRepository pedidoRepository;
+    @Autowired private CategoriaRepository categoriaRepository;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private JwtUtil jwtUtil;
 
     private Usuario vendedor;
     private String token;
+    private Categoria clubes;
+    private Categoria selecciones;
 
     @BeforeEach
     void setUp() {
@@ -53,6 +58,8 @@ class ProductoControllerIntegrationTest {
                 .email("vendedor-integracion@test.com")
                 .password(passwordEncoder.encode("password123")).role(Role.USER).build());
         token = jwtUtil.generateToken(vendedor.getEmail(), vendedor.getId());
+        clubes = categoriaRepository.save(Categoria.builder().nombre("Clubes (integración)").build());
+        selecciones = categoriaRepository.save(Categoria.builder().nombre("Selecciones (integración)").build());
     }
 
     @AfterEach
@@ -61,6 +68,7 @@ class ProductoControllerIntegrationTest {
         pedidoRepository.deleteAll(pedidoRepository.findByUsuarioIdOrderByCreatedAtDesc(vendedor.getId()));
         productoRepository.deleteAll(productoRepository.findByOwnerUserId(vendedor.getId()));
         usuarioRepository.delete(vendedor);
+        categoriaRepository.deleteAll(java.util.List.of(clubes, selecciones));
     }
 
     /** Crea un producto y devuelve su id. */
@@ -185,6 +193,65 @@ class ProductoControllerIntegrationTest {
         // El producto quedó intacto
         mockMvc.perform(get("/api/productos/" + id))
                 .andExpect(jsonPath("$.variantes.length()").value(2));
+    }
+
+    /** Body de alta/edición con la categoría elegida, igual al que arma buildProductPayload. */
+    private String bodyConCategoria(Object categoriaId) {
+        return """
+                {"producto":{"name":"Camiseta","description":"d","price":45000,"club":"Boca Juniors",
+                 "liga":"LPA","temporada":"2026","tipo":"CAMISETA","images":[],"categoriaId":%s},
+                 "variantes":[{"talle":"M","stock":3,"sku":"CAT-M"}]}
+                """.formatted(categoriaId);
+    }
+
+    @Test
+    @DisplayName("POST /api/productos guarda la categoría que llega como categoriaId")
+    void testCrearProducto_GuardaLaCategoria() throws Exception {
+        String creado = mockMvc.perform(post("/api/productos")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyConCategoria(clubes.getId())))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        Long id = com.jayway.jsonpath.JsonPath.parse(creado).read("$.id", Integer.class).longValue();
+        mockMvc.perform(get("/api/productos/" + id))
+                .andExpect(jsonPath("$.categoriaId").value(clubes.getId().intValue()))
+                .andExpect(jsonPath("$.categoriaNombre").value("Clubes (integración)"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/productos/{id} cambia la categoría y no la borra al editar")
+    void testActualizarProducto_CambiaLaCategoria() throws Exception {
+        String creado = mockMvc.perform(post("/api/productos")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyConCategoria(clubes.getId())))
+                .andReturn().getResponse().getContentAsString();
+        Long id = com.jayway.jsonpath.JsonPath.parse(creado).read("$.id", Integer.class).longValue();
+
+        mockMvc.perform(put("/api/productos/" + id)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyConCategoria(selecciones.getId())))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/productos/" + id))
+                .andExpect(jsonPath("$.categoriaId").value(selecciones.getId().intValue()));
+    }
+
+    @Test
+    @DisplayName("POST /api/productos con una categoría inexistente responde 404 y no crea nada")
+    void testCrearProducto_CategoriaInexistente_404() throws Exception {
+        mockMvc.perform(post("/api/productos")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyConCategoria(999999)))
+                .andExpect(status().isNotFound());
+
+        org.junit.jupiter.api.Assertions.assertTrue(
+                productoRepository.findByOwnerUserId(vendedor.getId()).isEmpty(),
+                "con la categoría inválida no tiene que quedar un producto a medio crear");
     }
 
     private Integer leerVariante(Long productoId, String talle, String campo) throws Exception {
