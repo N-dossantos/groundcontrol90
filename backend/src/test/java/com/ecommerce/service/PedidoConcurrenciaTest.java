@@ -3,6 +3,7 @@ package com.ecommerce.service;
 import com.ecommerce.dto.CreatePedidoDTO;
 import com.ecommerce.entity.*;
 import com.ecommerce.repository.*;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,12 +44,7 @@ class PedidoConcurrenciaTest {
 
     @BeforeEach
     void setUp() {
-        // El contexto de Spring (y por lo tanto la H2 en memoria) se comparte entre clases
-        // de test, así que se limpia respetando el orden de las FK.
-        pedidoRepository.deleteAll();
-        productoVarianteRepository.deleteAll();
-        productoRepository.deleteAll();
-        usuarioRepository.deleteAll();
+        limpiarBase();
 
         Usuario vendedor = usuarioRepository.save(Usuario.builder()
                 .nombre("V").apellido("V").username("vendedor2").email("vendedor2@test.com")
@@ -65,6 +61,24 @@ class PedidoConcurrenciaTest {
         ProductoVariante variante = productoVarianteRepository.save(ProductoVariante.builder()
                 .producto(producto).talle("M").stock(1).sku("ULTIMA-M").build());
         varianteId = variante.getId();
+    }
+
+    // Sin rollback, lo que crea el test queda commiteado. Hay que borrarlo también al
+    // terminar: el contexto de los tests de controllers queda en caché y no recrea el
+    // esquema, así que un pedido sobrante (vendedor con id menor que el comprador) hacía
+    // fallar su usuarioRepository.deleteAll() según el orden en que corrieran las clases.
+    @AfterEach
+    void tearDown() {
+        limpiarBase();
+    }
+
+    // El contexto de Spring (y por lo tanto la H2 en memoria) se comparte entre clases
+    // de test, así que se limpia respetando el orden de las FK.
+    private void limpiarBase() {
+        pedidoRepository.deleteAll();
+        productoVarianteRepository.deleteAll();
+        productoRepository.deleteAll();
+        usuarioRepository.deleteAll();
     }
 
     @Test

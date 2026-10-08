@@ -2,6 +2,7 @@ package com.ecommerce.service;
 
 import com.ecommerce.entity.*;
 import com.ecommerce.repository.*;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,13 +54,7 @@ class EmailServiceSinSesionTest {
 
     @BeforeEach
     void setUp() {
-        // El contexto de Spring (y por lo tanto la H2 en memoria) se comparte entre clases
-        // de test, así que se limpia respetando el orden de las FK.
-        detallePedidoRepository.deleteAll();
-        pedidoRepository.deleteAll();
-        productoVarianteRepository.deleteAll();
-        productoRepository.deleteAll();
-        usuarioRepository.deleteAll();
+        limpiarBase();
 
         Usuario vendedor = usuarioRepository.save(Usuario.builder()
                 .nombre("V").apellido("V").username("vendedor4").email("vendedor4@test.com")
@@ -93,6 +88,25 @@ class EmailServiceSinSesionTest {
     private EmailService.ResumenPedido resumenConSesionYaCerrada() {
         return txTemplate.execute(status ->
                 EmailService.ResumenPedido.de(pedidoRepository.findById(pedidoId).orElseThrow()));
+    }
+
+    // Sin rollback, lo que crea el test queda commiteado. Hay que borrarlo también al
+    // terminar: el contexto de los tests de controllers queda en caché y no recrea el
+    // esquema, así que un pedido sobrante (vendedor con id menor que el comprador) hacía
+    // fallar su usuarioRepository.deleteAll() según el orden en que corrieran las clases.
+    @AfterEach
+    void tearDown() {
+        limpiarBase();
+    }
+
+    // El contexto de Spring (y por lo tanto la H2 en memoria) se comparte entre clases
+    // de test, así que se limpia respetando el orden de las FK.
+    private void limpiarBase() {
+        detallePedidoRepository.deleteAll();
+        pedidoRepository.deleteAll();
+        productoVarianteRepository.deleteAll();
+        productoRepository.deleteAll();
+        usuarioRepository.deleteAll();
     }
 
     @Test
