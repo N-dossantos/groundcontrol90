@@ -4,6 +4,22 @@ Marketplace multi-vendedor con **React + Vite** (frontend) y **Spring Boot + MyS
 (backend), con pagos por Mercado Pago y deploy dockerizado detrás de Caddy con TLS
 automático.
 
+## 🧪 Demo online
+
+**https://groundcontrol-zeta.vercel.app**: el frontend corriendo en Vercel con el backend
+simulado dentro del navegador. No necesita crear cuenta.
+
+- **Cuentas:** `user1@test.com` / `user123` (compra y vende), `test@test.com` / `test123`
+  (vende), `admin@test.com` / `admin123` (administra). También podés registrarte.
+- **Funciona de punta a punta:** catálogo y búsqueda, carrito, checkout con descuento de
+  stock por talle, mis pedidos y cancelación, publicar y editar productos (con imágenes de
+  hasta 1 MB), mis ventas y cambio de estado, panel de administración y reportes.
+- **Simulado:** Mercado Pago (el pago se aprueba al instante, sin salir del sitio) y los
+  emails (no se envían). Los datos viven en el `localStorage` de tu navegador. "Reiniciar
+  demo", en el banner, los vuelve al estado inicial.
+- El deploy real (backend Spring Boot + MySQL detrás de Caddy) es el del VPS, descripto en
+  [Deploy a Producción](#-deploy-a-producción). El código de la demo no viaja en ese build.
+
 ## 🚀 Inicio Rápido
 
 ### 🐳 Método 1: Docker (recomendado)
