@@ -9,6 +9,7 @@ export default [
         process: "readonly",
         window: "readonly",
         document: "readonly",
+        __DEMO_MODE__: "readonly",
       },
       parserOptions: {
         ecmaFeatures: {

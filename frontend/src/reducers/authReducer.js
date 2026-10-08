@@ -5,6 +5,8 @@ export const authInitialState = {
   loading: false,
   error: null,
   storageType: null, // 'localStorage' or 'sessionStorage'
+  // true mientras se valida una sesión guardada al cargar la app (ver AuthContext)
+  restoring: false,
 }
 export const authReducer = (state, action) => {
   switch (action.type) {
@@ -43,6 +45,11 @@ export const authReducer = (state, action) => {
         token: action.payload.token,
         isAuthenticated: true,
         storageType: action.payload.storageType,
+        restoring: false,
+      }
+    case "AUTH_RESTORE_FAILED":
+      return {
+        ...authInitialState,
       }
     default:
       return state

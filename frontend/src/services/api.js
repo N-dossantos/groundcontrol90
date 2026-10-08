@@ -5,6 +5,20 @@ import { ERROR_MESSAGES, TOKEN_PREFIX } from "../constants"
 // absoluta con localhost apuntaría a la máquina del visitante, no al servidor.
 const API_BASE_URL = "/api"
 
+// Modo demo (deploy de Vercel, sin backend): las respuestas salen de un backend simulado
+// en el navegador (services/demo/). __DEMO_MODE__ es un literal que fija vite.config.js:
+// en el build del VPS vale false, Rollup elimina los branches y los import() de abajo, y
+// el código de la demo no llega a dist/ ni como chunk separado.
+const DEMO = __DEMO_MODE__
+
+const fetchApi = async (endpoint, config) => {
+  if (DEMO) {
+    const { responder } = await import("./demo/router")
+    return responder(endpoint, config)
+  }
+  return fetch(`${API_BASE_URL}${endpoint}`, config)
+}
+
 // Helper function to get JWT token from storage
 const getAuthToken = () => {
   return localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
@@ -12,7 +26,6 @@ const getAuthToken = () => {
 
 // Helper function to make HTTP requests with JWT support
 const request = async (endpoint, options = {}) => {
-  const url = `${API_BASE_URL}${endpoint}`
   const token = getAuthToken()
   
   const config = {
@@ -25,13 +38,21 @@ const request = async (endpoint, options = {}) => {
   }
 
   try {
-    const response = await fetch(url, config)
+    const response = await fetchApi(endpoint, config)
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || errorData.message || `HTTP error! status: ${response.status}`)
+      // `message` trae el detalle en castellano ("Credenciales inválidas"); `error` es el
+      // título genérico del GlobalExceptionHandler ("Unauthorized"). Algunos endpoints
+      // (AdminController) sólo mandan `error`, por eso queda como segunda opción.
+      throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`)
     }
-    
+
+    // Los DELETE responden 204 sin body: response.json() fallaría sobre una operación exitosa.
+    if (response.status === 204) {
+      return null
+    }
+
     return await response.json()
   } catch (error) {
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
@@ -147,7 +168,10 @@ export const api = {
   
   async validateToken(token) {
     try {
+      // AuthController expone /auth/validate sólo como POST: con el GET por defecto de
+      // fetch la validación fallaba siempre y la sesión guardada se borraba en cada recarga.
       const response = await request('/auth/validate', {
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -707,6 +731,11 @@ export const api = {
    * rompería el parseo del multipart del lado del backend.
    */
   async uploadImage(file) {
+    if (DEMO) {
+      const { leerImagenDemo } = await import("./demo/imagenes")
+      return leerImagenDemo(file)
+    }
+
     const formData = new FormData()
     formData.append('file', file)
 

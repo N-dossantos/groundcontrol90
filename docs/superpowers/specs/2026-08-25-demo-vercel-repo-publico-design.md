@@ -20,7 +20,8 @@ De ahí que el trabajo se parta en dos etapas, decididas con el usuario:
 - **Etapa 1 (este documento)**: repo público en GitHub + demo del frontend en Vercel, con el
   backend simulado dentro del propio frontend.
 - **Etapa 2 (futura)**: el deploy real y completo en un VPS con Caddy + Compose, tal como ya está
-  diseñado en `docs/superpowers/plans/2026-08-10-fase4-deploy-golive.md` y `fase5.md`. El servidor
+  documentado en el runbook del `README.md`, `docs/superpowers/plans/fase5.md` y
+  `checklist-go-live.md`. El servidor
   todavía no está definido; se planifica por separado.
 
 Vercel no participa de la etapa 2. La demo y la aplicación real son destinos distintos.
