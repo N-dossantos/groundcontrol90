@@ -85,3 +85,25 @@ export const pedidoDTO = (state, p) => {
     updatedAt: p.updatedAt,
   }
 }
+
+export const ventaDTO = (state, d) => {
+  const pedido = state.pedidos.find((p) => p.id === d.pedidoId)
+  const comprador = pedido ? state.usuarios.find((u) => u.id === pedido.usuarioId) : null
+  return {
+    detalleId: d.id,
+    productoId: d.productoId,
+    productoNombre: d.productoNombre,
+    talle: d.talle,
+    productoImagen: d.productoImagen,
+    cantidad: d.cantidad,
+    precioUnitario: d.precioUnitario,
+    subtotal: d.precioUnitario * d.cantidad,
+    estadoItem: d.estadoItem,
+    pedidoId: pedido ? pedido.id : null,
+    fechaPedido: pedido ? pedido.createdAt : null,
+    compradorId: comprador ? comprador.id : null,
+    compradorNombre: nombreCompleto(comprador),
+    compradorEmail: comprador ? comprador.email : null,
+    direccionEnvio: pedido ? pedido.direccionEnvio : null,
+  }
+}

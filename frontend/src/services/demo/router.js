@@ -6,6 +6,7 @@ import * as productos from "./handlers/productos"
 import * as categorias from "./handlers/categorias"
 import * as pedidos from "./handlers/pedidos"
 import * as pagos from "./handlers/pagos"
+import * as ventas from "./handlers/ventas"
 
 // Endpoints que simula la demo: sólo los que usa alguna pantalla. `acceso` replica las
 // reglas de SecurityConfig y los @PreAuthorize: "publico" no mira el token, "usuario"
@@ -33,6 +34,10 @@ const RUTAS = [
 
   ["POST", "/pagos/pedidos/:pedidoId/preferencia", "usuario", pagos.crearPreferencia],
   ["GET", "/pagos/pedidos/:pedidoId/estado", "usuario", pagos.estado],
+
+  ["GET", "/ventas/mis-ventas", "usuario", ventas.misVentas],
+  ["GET", "/ventas/estadisticas", "usuario", ventas.estadisticas],
+  ["PUT", "/ventas/:detalleId/estado", "usuario", ventas.actualizarEstado],
 ]
 
 const TABLA = RUTAS.map(([metodo, patron, acceso, handler]) => ({
